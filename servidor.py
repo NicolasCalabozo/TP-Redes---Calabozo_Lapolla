@@ -18,7 +18,7 @@ def filmography(title: str) -> list[str]:
 
 def getRawMovies():
     with open('movies.json', 'r', encoding='utf-8') as json_file:
-        data: json = json.load(json_file)
+        data = json.load(json_file)
     return data
 
 def getMovieTitles() -> list[str]: 
