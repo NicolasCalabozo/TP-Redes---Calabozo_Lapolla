@@ -9,7 +9,7 @@ def getMovieTitles() -> list[str]:
     titles = [movie['title'] for movie in data]
     return titles
 
-def getFilteredMovies(filter_text: str) -> list[str]:
+def getFilteredMoviesByTitle(filter_text: str) -> list[str]:
     titles = getMovieTitles()
     filtered_titles = []
     for title in titles:

@@ -1,44 +1,43 @@
 from fastapi import FastAPI
-import json
+import requests
+import servicioServidor as serv 
 app = FastAPI()
+flagDownload = False
 
+@app.get("/download")
+def databaseDownload():
+    global flagDownload
+    url = "https://raw.githubusercontent.com/prust/wikipedia-movie-data/master/movies.json"
+    response = requests.get(url)
+    #OJO: Si el recurso está disponible: Try/Catch
+    if flagDownload == False:
+        with open("movies.json", "wb") as f:
+            f.write(response.content)
+            flagDownload = True
+    else:
+        while(True):
+            respuesta = input('¿Desea sobreescribir el archivo movies.json? (S/N):').upper()
+            if(respuesta in 'SN'):
+                if(respuesta == 'S'):
+                    with open("movies.json", "wb") as f:
+                        f.write(response.content)
+                    print('Archivo sobrescrito correctamente.')
+                    break
+                else:
+                    ##OJO : Sacar mensaje
+                    print('No se sobrescribió el archivo.')
+                    break
+            else:
+                print('Entrada incorrecta. Reintente.')
 
 @app.get("/allMovies")
 def allMovies():
-    return getMovieTitles()
+    return serv.getMovieTitles()
 
 @app.get("/filteredMovies")
 def filteredMovies(title: str) -> list[str]:
-    return getFilteredMovies(title)
+    return serv.getFilteredMoviesByTitle(title)
 
 @app.get("/filmography")
 def filmography(title: str) -> list[str]:
-    return getFilmography(title)
-
-
-def getRawMovies():
-    with open('movies.json', 'r', encoding='utf-8') as json_file:
-        data = json.load(json_file)
-    return data
-
-def getMovieTitles() -> list[str]: 
-    data = getRawMovies()
-    titles = [movie['title'] for movie in data]
-    return titles
-
-def getFilteredMovies(filter_text: str) -> list[str]:
-    titles = getMovieTitles()
-    filtered_titles = []
-    for title in titles:
-        if filter_text.upper().strip() in title.upper():
-            filtered_titles.append(title)
-    return filtered_titles
-
-def getFilmography(name_filter: str):
-    data = getRawMovies()
-    filmography = []
-    for movie in data:
-        for cast in movie['cast']:
-            if name_filter.upper().strip() in cast.upper():
-                filmography.append(movie['title'])
-    return filmography
+    return serv.getFilmography(title)
