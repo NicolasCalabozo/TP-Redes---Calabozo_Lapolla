@@ -1,44 +1,33 @@
 from fastapi import FastAPI
 import json
+import servicioServidor as ss
 app = FastAPI()
 
 
 @app.get("/allMovies")
 def allMovies():
-    return getMovieTitles()
+    return ss.getMovieTitles()
 
 @app.get("/filteredMovies")
 def filteredMovies(title: str) -> list[str]:
-    return getFilteredMovies(title)
+    return ss.getFilteredMovies(title)
 
 @app.get("/filmography")
-def filmography(title: str) -> list[str]:
-    return getFilmography(title)
+def filmography(name: str) -> list[str]:
+    return ss.getFilmography(name)
 
+@app.get("/moviesByGender")
+def moviesByGender(gender1: str, gender2: str, gender3: str) -> list[str]:
+    return ss.getMoviesByGenders(gender1, gender2, gender3)
 
-def getRawMovies():
-    with open('movies.json', 'r', encoding='utf-8') as json_file:
-        data = json.load(json_file)
-    return data
+@app.get("/movieSinopsis")
+def sinopsis(title: str) -> str:
+    return ss.getSinopsis(title)
 
-def getMovieTitles() -> list[str]: 
-    data = getRawMovies()
-    titles = [movie['title'] for movie in data]
-    return titles
+@app.get("/moviesByYear")
+def moviesByYear(year: int) -> list[str]:
+    return ss.getMoviesByYear(year)
 
-def getFilteredMovies(filter_text: str) -> list[str]:
-    titles = getMovieTitles()
-    filtered_titles = []
-    for title in titles:
-        if filter_text.upper().strip() in title.upper():
-            filtered_titles.append(title)
-    return filtered_titles
-
-def getFilmography(name_filter: str):
-    data = getRawMovies()
-    filmography = []
-    for movie in data:
-        for cast in movie['cast']:
-            if name_filter.upper().strip() in cast.upper():
-                filmography.append(movie['title'])
-    return filmography
+@app.get("/filmographyByGender")
+def filmographyByGender(name: str, gender: str) -> list[str]:
+    return ss.getFilmographyByGender(name, gender)

@@ -25,3 +25,45 @@ def getFilmography(name_filter: str):
             if name_filter.upper().strip() in cast.upper():
                 filmography.append(movie['title'])
     return filmography
+
+def getMoviesByGenders(gender_1 = None, gender_2 = None, gender_3 = None) -> list[str]:
+    data = getRawMovies()
+    movies = []
+    for movie in data:
+        if gender_1 and gender_2 and gender_3:
+            if gender_1 in movie['genres'] and gender_2 in movie['genres'] and gender_3 in movie['genres']:
+                movies.append(movie['title'])
+        elif gender_1 and gender_2:
+            if gender_1 in movie['genres'] and gender_2 in movie['genres']:
+                movies.append(movie['title'])
+        elif gender_1 and gender_3:
+            if gender_1 in movie['genres'] and gender_3 in movie['genres']:
+                movies.append(movie['title'])
+        elif gender_2 and gender_3:
+            if gender_2 in movie['genres'] and gender_3 in movie['genres']:
+                movies.append(movie['title'])
+        else:
+            raise ValueError("No hay pelicula con esos generos")
+    return movies
+
+def getSinopsis(filter_text: str) -> str:
+    data = getRawMovies()
+    for movie in data:
+        if movie['title'] == filter_text:
+            return movie['extract']
+
+def getMoviesByYear(filter_year: int) -> list[str]:
+    data = getRawMovies()
+    movies = []
+    for movie in data:
+        if movie['year'] == filter_year:
+            movies.append(movie['title'])
+    return movies
+
+def getFilmographyByGender(name_filter: str, gender_filter) -> list[str]:
+    data = getRawMovies()
+    filmography = []
+    for movie in data:
+        if name_filter in movie['cast'] and gender_filter in movie['genres']:
+            filmography.append(movie['title'])
+    return filmography
