@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import json
+from fastapi import Query
 import servicioServidor as ss
 app = FastAPI()
 
@@ -8,26 +8,26 @@ def allMovies():
     return ss.getMovieTitles()
 
 @app.get("/filteredMovies")
-def filteredMovies(title: str) -> list[str]:
-    return ss.getFilteredMovies(title)
+def filteredMovies(title: str) -> str:
+    return ss.getFilteredMoviesByTitle(title)
 
 @app.get("/filmography")
-def filmography(name: str) -> list[str]:
+def filmography(name: str) -> str:
     return ss.getFilmography(name)
 
 @app.get("/moviesByGender")
-def moviesByGender(gender1: str, gender2: str, gender3: str) -> list[str]:
-    return ss.getMoviesByGenders(gender1, gender2, gender3)
+def moviesByGender(generos : list[str] = Query(...)) -> str:
+    return ss.getMoviesByGenders(generos)
 
 @app.get("/movieSinopsis")
 def sinopsis(title: str) -> str:
     return ss.getSinopsis(title)
 
 @app.get("/moviesByYear")
-def moviesByYear(year: int) -> list[str]:
+def moviesByYear(year: int) -> str:
     return ss.getMoviesByYear(year)
 
 @app.get("/filmographyByGender")
-def filmographyByGender(name: str, gender: str) -> list[str]:
+def filmographyByGender(name: str, gender: str) -> str:
     return ss.getFilmographyByGender(name, gender)
 
