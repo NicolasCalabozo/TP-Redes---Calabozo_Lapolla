@@ -52,7 +52,6 @@ def menu_abm():
 def menu_consultas():
 
     while True:
-        #CONSULTAS
         print("--                   Menu Consultas              --")
         print("-    1.  Mostrar todas las películas              -")
         print("-    2.  Buscar por título                        -")
@@ -108,6 +107,7 @@ def menu_consultas():
             print("Opción no válida. Reintente.")
             continue
 
+#Métodos GET
 def consultar_todas():
     respuesta = requests.get("http://localhost:8000/allMovies")
     print(respuesta.json())
@@ -136,7 +136,64 @@ def buscar_filmografia_genero(actor: str, genero: str) -> None:
     respuesta = requests.get("http://localhost:8000/filmographyByGender", params = {"name": actor, "gender": genero})
     print(respuesta.json())
 
+#Metodos POST
+      
+def agregar_pelicula():
+    pelicula = crear_pelicula()
+    respuesta = requests.post("http://localhost:8000/agregarPelicula",
+                            json= pelicula)
+    print(respuesta.status_code)
+
+def crear_pelicula() -> dict[str, str|int|list[str]]:
+    titulo = input("Ingrese el título de la película: ").strip()
+    #Try Catch por si ingresan una letra
+    año = int(input("Ingrese el año de estreno: "))
+    elenco = []
+    opc = input('¿Desea ingresar el elenco? (S/N): ').upper().strip()
+    if(validar_opcion(opc) == 'S'):
+        cadena_elenco = input(f"Ingrese el/los miembro/s del elenco, separados por coma: ")
+        elenco = map(str.strip, cadena_elenco.split(sep=','))
+    generos = []
+    
+    #Titanic
+    #Titanic - está en la posicion 10 de lista peliculas[10] = titanic
+    #modifico titanic, Titanic 2
+    #Lo guardo / piso en la lista en la posicion 10
+    
+    opc = input("¿Desea ingresar los géneros de la película? (S/N): ")
+    if validar_opcion(opc) == 'S':
+        generos_cadena = (input(f"Ingrese los generos de la película separados por coma: "))
+        generos = map(str.strip, generos_cadena.split(','))
+    sinopsis = ""
+    opc = input("¿Desea ingresar una sinopsis? (S/N): ")
+    if validar_opcion(opc) == 'S':
+        sinopsis = input("Ingrese la sinopsis: ")
+    pelicula = {
+        "title" : titulo,
+        "year": año,
+        "cast": elenco,
+        "genres": generos,
+        "extract": sinopsis
+    }
+    return pelicula
+        
+def validar_opcion(opc:str):
+    while True:
+        if(opc != "N" or opc != "S"):
+            print("Opción incorrecta. Reintente (S/N).")
+        else:
+            break
+    return opc  
+
+def modificar_pelicula():
+    pass
+
+def borrar_pelicula():
+    pass
+
 menu_general()
+
+#Me
 
 #Agregar paginado
 # i=0 i=5 pagina 1 <- la pagina donde estamos
