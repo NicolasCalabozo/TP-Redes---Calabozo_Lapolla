@@ -1,4 +1,5 @@
 import json
+
 def getRawMovies():
     with open('movies.json', 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
@@ -17,7 +18,7 @@ def getFilteredMovies(filter_text: str) -> list[str]:
             filtered_titles.append(title)
     return filtered_titles
 
-def getFilmography(name_filter: str):
+def getFilmography(name_filter: str) -> list[str]:
     data = getRawMovies()
     filmography = []
     for movie in data:

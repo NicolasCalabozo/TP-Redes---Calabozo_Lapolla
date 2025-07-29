@@ -3,7 +3,6 @@ import json
 import servicioServidor as ss
 app = FastAPI()
 
-
 @app.get("/allMovies")
 def allMovies():
     return ss.getMovieTitles()
@@ -31,3 +30,4 @@ def moviesByYear(year: int) -> list[str]:
 @app.get("/filmographyByGender")
 def filmographyByGender(name: str, gender: str) -> list[str]:
     return ss.getFilmographyByGender(name, gender)
+
