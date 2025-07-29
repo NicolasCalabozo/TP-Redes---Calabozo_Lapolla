@@ -43,6 +43,15 @@ def getMoviesByGenders(gender_1 = None, gender_2 = None, gender_3 = None) -> lis
         elif gender_2 and gender_3:
             if gender_2 in movie['genres'] and gender_3 in movie['genres']:
                 movies.append(movie['title'])
+        elif gender_1:
+            if gender_1 in movie['genres']:
+                movies.append(movie['title'])
+        elif gender_2:
+            if gender_2 in movie['genres']:
+                movies.append(movie['title'])
+        elif gender_3:
+            if gender_3 in movie['genres']:
+                movies.append(movie['title'])
         else:
             raise ValueError("No hay pelicula con esos generos")
     return movies
