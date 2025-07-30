@@ -193,9 +193,8 @@ def borrar_pelicula():
 
 menu_general()
 
-#Me
 
-#Agregar paginado
+#OJO: Agregar paginado
 # i=0 i=5 pagina 1 <- la pagina donde estamos
 # i=5 i=10 pagina 2
 # ...
