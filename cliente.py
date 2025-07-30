@@ -1,5 +1,21 @@
 import requests
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets  # Para comparar credenciales de forma segura
 
+security = HTTPBasic()
+
+def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> str:
+    usuario_correcto = secrets.compare_digest(credenciales.username, "admin")
+    contraseña_correcta = secrets.compare_digest(credenciales.password, "1234")
+
+    if not (usuario_correcto and contraseña_correcta):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail = "Credenciales incorrectas",
+            headers = {"WWW-Authenticate": "Basic"},
+        )
+    return credenciales.username
 
 def menu_general():
         while True:
@@ -137,7 +153,16 @@ def buscar_filmografia_genero(actor: str, genero: str) -> None:
     print(respuesta.json())
 
 #Metodos POST
-      
+#|-----------------------------------------------------------------------|    
+#| En los POST y DELETE como parámetro de los métodos hay que agregar:   |
+#| "credentials: HTTPBasicCredentials = Depends(verificar_credenciales)" |
+#| para que si las credenciales son correctas pueda usar los métodos y   |
+#| si no entonces no se ejecutan                                         | 
+#|-----------------------------------------------------------------------|
+
+#FastAPI interpreta cada parámetro con Depends() como una dependencia que se debe ejecutar antes de procesar el endpoint. Es como un filtro previo
+
+
 def agregar_pelicula():
     pelicula = crear_pelicula()
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
