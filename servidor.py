@@ -1,5 +1,11 @@
 from fastapi import FastAPI
 from fastapi import Query
+from fastapi import Depends
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi import Depends, HTTPException, status
+from fastapi.responses import JSONResponse
+
+security = HTTPBasic()
 import servicioServidor as ss
 app = FastAPI()
 
@@ -34,4 +40,12 @@ def filmographyByGender(name: str, gender: str) -> str:
 @app.post("/agregarPelicula")
 def agregarPelicula(pelicula : dict[str, str|int|list[str]]):
     ss.post_pelicula(pelicula)
+
+@app.get("/verificarAcceso")
+def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
+    try:
+        permisos = ss.verificar_credenciales(credentials)
+        return permisos
+    except HTTPException as ex:
+       return JSONResponse(content={"acceso": f"{ex.detail}"}, status_code=ex.status_code) 
     

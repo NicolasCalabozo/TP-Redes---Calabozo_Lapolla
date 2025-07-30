@@ -1,23 +1,17 @@
 import requests
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
-import secrets  # Para comparar credenciales de forma segura
-
-security = HTTPBasic()
-
-def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> str:
-    usuario_correcto = secrets.compare_digest(credenciales.username, "admin")
-    contraseña_correcta = secrets.compare_digest(credenciales.password, "1234")
-
-    if not (usuario_correcto and contraseña_correcta):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail = "Credenciales incorrectas",
-            headers = {"WWW-Authenticate": "Basic"},
-        )
-    return credenciales.username
+from requests.auth import HTTPBasicAuth
+#credenciales = HTTPBasicAuth <- variable global
+#permisos_usuario = [...]
+# USUARIO
+# {
+#     "id":1,
+#     "usuario": "pepe",
+#     "contraseña": "pepe2",
+#     "permisos": ["crear", "ver", "modificar", "editar", "todo"]
+# }
 
 def menu_general():
+        #Ingresar usuario y contraseña / consultar, crear, modificar y eliminar
         while True:
             #ABM
             print("--           General             --")
@@ -108,6 +102,7 @@ def menu_consultas():
             buscar_sinopsis(titulo)
             
         elif opcion == '6':
+            #OJO: Try catch por si ingresan un valor que no sea entero
             año = int(input("Ingrese un año: "))
             buscar_peliculas_año(año)
             
@@ -115,6 +110,9 @@ def menu_consultas():
             actor = input('Ingrese un actor: ')
             genero = input('Ingrese un género: ')
             buscar_filmografia_genero(actor,genero)
+            
+        elif opcion == '8':
+            agregar_pelicula()
     
         elif opcion == '0':
             break
@@ -164,14 +162,20 @@ def buscar_filmografia_genero(actor: str, genero: str) -> None:
 
 
 def agregar_pelicula():
+    permisos = verificar_permisos()
+    if not permisos:
+        return
+    #Magic string por conveniencia
+    if not("crear" in permisos or "todo" in permisos):
+        print("No tiene los permisos necesarios para realizar esta acción.")
+        return
     pelicula = crear_pelicula()
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
                             json= pelicula)
-    print(respuesta.status_code)
-
+    
 def crear_pelicula() -> dict[str, str|int|list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
-    #Try Catch por si ingresan una letra
+    #OJO: Try Catch por si ingresan una letra
     año = int(input("Ingrese el año de estreno: "))
     elenco = []
     opc = input('¿Desea ingresar el elenco? (S/N): ').upper().strip()
@@ -179,12 +183,6 @@ def crear_pelicula() -> dict[str, str|int|list[str]]:
         cadena_elenco = input(f"Ingrese el/los miembro/s del elenco, separados por coma: ")
         elenco = map(str.strip, cadena_elenco.split(sep=','))
     generos = []
-    
-    #Titanic
-    #Titanic - está en la posicion 10 de lista peliculas[10] = titanic
-    #modifico titanic, Titanic 2
-    #Lo guardo / piso en la lista en la posicion 10
-    
     opc = input("¿Desea ingresar los géneros de la película? (S/N): ")
     if validar_opcion(opc) == 'S':
         generos_cadena = (input(f"Ingrese los generos de la película separados por coma: "))
@@ -202,7 +200,7 @@ def crear_pelicula() -> dict[str, str|int|list[str]]:
     }
     return pelicula
         
-def validar_opcion(opc:str):
+def validar_opcion(opc:str)-> str:
     while True:
         if(opc != "N" or opc != "S"):
             print("Opción incorrecta. Reintente (S/N).")
@@ -216,7 +214,20 @@ def modificar_pelicula():
 def borrar_pelicula():
     pass
 
+def verificar_permisos() -> list[str]:
+    usuario = input("Ingrese su usuario: ").strip()
+    contraseña = input("Ingrese su contraseña:").strip()
+    #OJO: Agregar funcion de regex para creacion de usuarios y contraseña
+    auth = HTTPBasicAuth(usuario,contraseña)
+    r = requests.get("http://localhost:8000/verificarAcceso", auth=auth)
+    if r.status_code != 200:
+        print(f"Acceso denegado: {r.json().get('acceso')}") #Mensaje de error
+        return [] #Permite verificar si el usuario existe o las credenciales ingresadas son correctas
+    else:
+        return r.json()
+
 menu_general()
+
 
 
 #OJO: Agregar paginado
