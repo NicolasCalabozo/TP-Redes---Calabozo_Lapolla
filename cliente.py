@@ -1,5 +1,6 @@
 import requests
 from requests.auth import HTTPBasicAuth
+
 #credenciales = HTTPBasicAuth <- variable global
 #permisos_usuario = [...]
 # USUARIO
@@ -46,7 +47,7 @@ def menu_abm():
         print("---------------------------------------------------")
         opcion = input("Ingrese una opción: ")
         if opcion == '1':
-            pass
+            agregar_pelicula()
         elif opcion == '2':
             pass
         elif opcion == '3':
@@ -111,9 +112,6 @@ def menu_consultas():
             genero = input('Ingrese un género: ')
             buscar_filmografia_genero(actor,genero)
             
-        elif opcion == '8':
-            agregar_pelicula()
-    
         elif opcion == '0':
             break
         
@@ -183,12 +181,12 @@ def crear_pelicula() -> dict[str, str|int|list[str]]:
         cadena_elenco = input(f"Ingrese el/los miembro/s del elenco, separados por coma: ")
         elenco = map(str.strip, cadena_elenco.split(sep=','))
     generos = []
-    opc = input("¿Desea ingresar los géneros de la película? (S/N): ")
+    opc = input("¿Desea ingresar los géneros de la película? (S/N): ").strip().upper()
     if validar_opcion(opc) == 'S':
         generos_cadena = (input(f"Ingrese los generos de la película separados por coma: "))
         generos = map(str.strip, generos_cadena.split(','))
     sinopsis = ""
-    opc = input("¿Desea ingresar una sinopsis? (S/N): ")
+    opc = input("¿Desea ingresar una sinopsis? (S/N): ").strip().upper()
     if validar_opcion(opc) == 'S':
         sinopsis = input("Ingrese la sinopsis: ")
     pelicula = {
@@ -202,7 +200,7 @@ def crear_pelicula() -> dict[str, str|int|list[str]]:
         
 def validar_opcion(opc:str)-> str:
     while True:
-        if(opc != "N" or opc != "S"):
+        if(opc != "N" and opc != "S"):
             print("Opción incorrecta. Reintente (S/N).")
         else:
             break
@@ -216,7 +214,7 @@ def borrar_pelicula():
 
 def verificar_permisos() -> list[str]:
     usuario = input("Ingrese su usuario: ").strip()
-    contraseña = input("Ingrese su contraseña:").strip()
+    contraseña = input("Ingrese su contraseña: ").strip()
     #OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario,contraseña)
     r = requests.get("http://localhost:8000/verificarAcceso", auth=auth)
@@ -224,6 +222,7 @@ def verificar_permisos() -> list[str]:
         print(f"Acceso denegado: {r.json().get('acceso')}") #Mensaje de error
         return [] #Permite verificar si el usuario existe o las credenciales ingresadas son correctas
     else:
+        print("Acceso concedido, bienvenido.")
         return r.json()
 
 menu_general()
