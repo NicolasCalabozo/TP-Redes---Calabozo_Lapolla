@@ -1,39 +1,46 @@
 import requests
 from fastapi import status
 
-def crear_pelicula() -> dict[str, str|int|list[str]]:
+
+def crear_pelicula() -> dict[str, str | int | list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
-    año = validar_entero('Ingrese el año de estreno: ', "Error: Ingrese un año válido")
+    año = validar_entero('Ingrese el año de estreno: ',
+                         "Error: Ingrese un año válido")
     elenco = []
     opc = input('¿Desea ingresar el elenco? (S/N): ').upper().strip()
     if validar_opcion(opc):
-        cadena_elenco = input(f"Ingrese el/los miembro/s del elenco, separados por coma: ")
+        cadena_elenco = input(
+            f"Ingrese el/los miembro/s del elenco, separados por coma: ")
         elenco = map(str.strip, cadena_elenco.split(sep=','))
     generos = []
-    opc = input("¿Desea ingresar los géneros de la película? (S/N): ").strip().upper()
+    opc = input(
+        "¿Desea ingresar los géneros de la película? (S/N): ").strip().upper()
     if validar_opcion(opc):
-        generos_cadena = (input(f"Ingrese los generos de la película separados por coma: "))
+        generos_cadena = (
+            input(f"Ingrese los generos de la película separados por coma: "))
         generos = map(str.strip, generos_cadena.split(','))
     sinopsis = ""
     opc = input("¿Desea ingresar una sinopsis? (S/N): ").strip().upper()
     if validar_opcion(opc):
         sinopsis = input("Ingrese la sinopsis: ")
     pelicula = {
-        "title" : titulo,
+        "title": titulo,
         "year": año,
         "cast": elenco,
         "genres": generos,
         "extract": sinopsis
     }
     return pelicula
-        
-def validar_opcion(opc:str)-> bool:
+
+
+def validar_opcion(opc: str) -> bool:
     while True:
-        if(opc != "N" and opc != "S"):
+        if (opc != "N" and opc != "S"):
             print("Error: Opción incorrecta. Reintente (S/N).")
         else:
             break
-    return True if opc == 'S' else False  
+    return True if opc == 'S' else False
+
 
 def validar_entero(mensaje_input: str, mensaje_error: str) -> int:
     while True:
@@ -43,10 +50,11 @@ def validar_entero(mensaje_input: str, mensaje_error: str) -> int:
         except ValueError:
             print(mensaje_error)
 
+
 def procesar_respuesta(respuesta: requests.Response) -> None:
     data = respuesta.json()
     if respuesta.status_code not in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
-        print(f"Error HTTP {respuesta.status_code}: {data.get('error', 'Error desconocido')}")
+        print(
+            f"Error HTTP {respuesta.status_code}: {data.get('error', 'Error desconocido')}")
         return
     print(data.get("contenido"))
-    

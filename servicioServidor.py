@@ -7,40 +7,42 @@ import secrets
 from modelos import Permiso, Rol
 security = HTTPBasic()
 
-usuarios =[{
-        "id":"1",
-        "username": "admin",
-        "password": "admin123",
-        "rol": Rol.ADMIN,
-        "permisos": [Permiso.TODO]    
-    },
+usuarios = [{
+    "id": "1",
+    "username": "admin",
+    "password": "admin123",
+    "rol": Rol.ADMIN,
+    "permisos": [Permiso.TODO]
+},
     {
-        "id":"2",
+        "id": "2",
         "username": "usuario",
         "password": "usuario123",
         "rol": Rol.USUARIO,
-        "permisos": [Permiso.VER]    
-    },
+        "permisos": [Permiso.VER]
+},
     {
         "id": "3",
         "username": "editor",
         "password": "editor123",
         "rol": Rol.EDITOR,
         "permisos": [Permiso.VER, Permiso.CREAR, Permiso.EDITAR]
-    }
-    ]
+}
+]
+
 
 def get_peliculas() -> dict:
     try:
         with open('movies.json', 'r', encoding='utf-8') as json_file:
             datos = json.load(json_file)
-        #Devuelve diccionario porque es un método interno que no se va a usar para nada más que 
+        # Devuelve diccionario porque es un método interno que no se va a usar para nada más que
         return {"status": status.HTTP_200_OK, "datos": datos}
     except FileNotFoundError:
         return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": "El archivo 'movies.json' no existe."}
     except Exception as e:
         return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": f"Error inesperado: {str(e)}"}
-    
+
+
 def get_titulos() -> JSONResponse:
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -57,7 +59,8 @@ def get_titulos() -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"contenido": cadena_respuesta}
     )
-    
+
+
 def get_peliculas_por_titulo(filtro_titulo: str) -> JSONResponse:
     respuesta = get_peliculas()
 
@@ -80,6 +83,7 @@ def get_peliculas_por_titulo(filtro_titulo: str) -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"contenido": cadena_respuesta}
     )
+
 
 def get_filmografia(filtro_nombre: str) -> JSONResponse:
     respuesta = get_peliculas()
@@ -104,7 +108,8 @@ def get_filmografia(filtro_nombre: str) -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"contenido": cadena_respuesta}
     )
-    
+
+
 def get_peliculas_por_genero(generos: list[str]) -> JSONResponse:
     respuesta = get_peliculas()
 
@@ -128,6 +133,7 @@ def get_peliculas_por_genero(generos: list[str]) -> JSONResponse:
         content={"contenido": cadena_respuesta}
     )
 
+
 def get_sinopsis(filtro_titulo: str) -> JSONResponse:
     respuesta = get_peliculas()
 
@@ -149,11 +155,13 @@ def get_sinopsis(filtro_titulo: str) -> JSONResponse:
                 status_code=status.HTTP_200_OK,
                 content={"contenido": cadena_respuesta}
             )
-            
+
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
-        content={"mensaje": f"No se encontró una película con el título {filtro_titulo}"}
+        content={
+            "mensaje": f"No se encontró una película con el título {filtro_titulo}"}
     )
+
 
 def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
     respuesta = get_peliculas()
@@ -175,6 +183,7 @@ def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"contenido": cadena_respuesta}
     )
+
 
 def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONResponse:
     respuesta = get_peliculas()
@@ -205,20 +214,22 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONRes
         content={"contenido": cadena_respuesta}
     )
 
-def formatear_titulos(lista_peliculas : list[dict[str,str]])-> str:
+
+def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
     cadena_formateada = ""
-    i=0
-    #OJO: Tal vez ordenar alfabeticamente
+    i = 0
+    # OJO: Tal vez ordenar alfabeticamente
     if not len(lista_peliculas):
         return "\nNo hay películas que cumplan con el criterio ingresado\n"
     for pelicula in lista_peliculas:
-        i+=1
+        i += 1
         cadena_formateada += f"{i}.\t{pelicula['title']}\n"
     return cadena_formateada
 
+
 def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
     respuesta = get_peliculas()
-    
+
     if respuesta.get("status") != 200:
         return JSONResponse(
             status_code=respuesta["status"],
@@ -240,31 +251,32 @@ def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"mensaje": "Película agregada con éxito"}
     )
-    
-def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),)-> list[str]:
-    #Buscar el usuario en la base de datos, extraer la contraseña, comparar
+
+
+def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
+    # Buscar el usuario en la base de datos, extraer la contraseña, comparar
     usuario = buscar_usuario(credenciales.username)
-    if(not usuario):
+    if (not usuario):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail = "Usuario no encontrado"
+            detail="Usuario no encontrado"
         )
 
-    usuario_correcto = secrets.compare_digest(credenciales.username, usuario['username'])
-    contraseña_correcta = secrets.compare_digest(credenciales.password,  usuario['password'])
-    
+    usuario_correcto = secrets.compare_digest(
+        credenciales.username, usuario['username'])
+    contraseña_correcta = secrets.compare_digest(
+        credenciales.password,  usuario['password'])
+
     if not (usuario_correcto and contraseña_correcta):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail = "Credenciales incorrectas"
+            detail="Credenciales incorrectas"
         )
     return usuario['permisos']
-        
-def buscar_usuario(username: str)-> dict[str, Any] | None:
+
+
+def buscar_usuario(username: str) -> dict[str, Any] | None:
     for usuario in usuarios:
         if username == usuario['username']:
             return usuario
     return None
-    
-        
-
