@@ -2,6 +2,7 @@ import requests
 from fastapi import status
 
 
+
 def crear_pelicula() -> dict[str, str | int | list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
     año = validar_entero('Ingrese el año de estreno: ',

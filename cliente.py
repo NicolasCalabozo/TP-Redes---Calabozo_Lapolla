@@ -2,21 +2,14 @@ import requests
 from requests.auth import HTTPBasicAuth
 import servicioCliente as sc
 from modelos import Permiso, Rol
-# credenciales = HTTPBasicAuth <- variable global
-# permisos_usuario = [...]
-# USUARIO
-# {
-#     "id":1,
-#     "usuario": "pepe",
-#     "contraseña": "pepe2",
-#     "permisos": ["crear", "ver", "modificar", "editar", "todo"]
-# }
 
+usuario_actual = None
+contraseña_actual = None
+permisos_usuario = []
 
 def menu_general():
-    # Ingresar usuario y contraseña / consultar, crear, modificar y eliminar
-    while True:
-        # ABM
+    verificar_permisos()
+    while True: 
         print("--           General             --")
         print("-    1.  Menú de consultas        -")
         print("-    2.  Menú de ABM              -")
@@ -181,11 +174,11 @@ def buscar_filmografia_genero() -> None:
 
 
 def agregar_pelicula():
-    permisos = verificar_permisos()
-    if not permisos:
+    global permisos_usuario
+    if not permisos_usuario:
         return
     # Sacamos los magic strings en favor del uso de enums
-    if not (Permiso.CREAR in permisos or Permiso.TODO in permisos):
+    if not (Permiso.CREAR in permisos_usuario or Permiso.TODO in permisos_usuario):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     pelicula = sc.crear_pelicula()
@@ -212,6 +205,10 @@ def verificar_permisos() -> list[str]:
         print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
         return []  # Permite verificar si el usuario existe o las credenciales ingresadas son correctas
     else:
+        global usuario_actual, contraseña_actual, permisos_usuario
+        usuario_actual = usuario
+        contraseña_actual = contraseña_actual
+        permisos_usuario = r.json()['permisos']
         print("Acceso concedido, bienvenido.")
         return r.json()
 
