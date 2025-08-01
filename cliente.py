@@ -1,22 +1,25 @@
 import requests
 from requests.auth import HTTPBasicAuth
 import servicioCliente as sc
-from modelos import Permiso, Rol
+from modelos import Permiso
 
 usuario_actual = None
 contraseña_actual = None
 permisos_usuario = []
 sesion_iniciada = False
+
+
 def menu_general():
     global sesion_iniciada
     while not sesion_iniciada:
         verificar_permisos()
-    
-    while True: 
+
+    while True:
         print("--           General             --")
+        # Permiso VER, TODO
         print("-    1.  Menú de consultas        -")
+        # Permiso CREAR, MODIFICAR,ELIMINAR, TODO
         print("-    2.  Menú de ABM              -")
-        print("-    3.  Menu de test             -")
         print("-    0. Salir                     -")
         print("-----------------------------------")
         opcion = input("Ingrese una opción: ")
@@ -24,8 +27,6 @@ def menu_general():
             menu_consultas()
         elif opcion == '2':
             menu_abm()
-        elif opcion == '3':
-            pass
         elif opcion == '0':
             break
         else:
@@ -37,9 +38,13 @@ def menu_abm():
     while True:
         # ABM
         print("--                 Menu ABM                      --")
+        # Permiso CREAR
         print("-    1. Agregar película nueva                    -")
+        # Permiso EDITAR
         print("-    2. Modificar película                        -")
+        # Permiso ELIMINAR
         print("-    3. Eliminar película                         -")
+        # Permiso VER
         print("-    4. Consultar ultimas peliculas agregadas     -")
         print("-    0. Salir                                     -")
         print("---------------------------------------------------")
@@ -186,34 +191,34 @@ def agregar_pelicula():
         return
     pelicula = sc.crear_pelicula()
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
-                              json=pelicula)
+                              json={"pelicula": pelicula, "permisos": permisos_usuario})
     sc.procesar_respuesta(respuesta)
 
 
 def modificar_pelicula():
+    # PUT
     pass
 
 
 def borrar_pelicula():
+    # DELETE
     pass
 
 
-def verificar_permisos() -> list[str]:
+def verificar_permisos():
     usuario = input("Ingrese su usuario: ").strip()
     contraseña = input("Ingrese su contraseña: ").strip()
     # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario, contraseña)
-    r = requests.get("http://localhost:8000/verificarAcceso", auth=auth)
+    r = requests.post("http://localhost:8000/verificarAcceso", auth=auth)
     if r.status_code != 200:
         print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
-        return []  # Permite verificar si el usuario existe o las credenciales ingresadas son correctas
     else:
         global permisos_usuario, sesion_iniciada, usuario_actual
         usuario_actual = usuario
         permisos_usuario = r.json()['permisos']
         sesion_iniciada = True
         print("Acceso concedido, bienvenido.")
-        return r.json()
 
 
 menu_general()

@@ -2,7 +2,6 @@ import requests
 from fastapi import status
 
 
-
 def crear_pelicula() -> dict[str, str | int | list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
     año = validar_entero('Ingrese el año de estreno: ',
@@ -33,6 +32,12 @@ def crear_pelicula() -> dict[str, str | int | list[str]]:
     }
     return pelicula
 
+# OJO: Completar método de modificar
+
+
+def modificar_pelicula():
+    pass
+
 
 def validar_opcion(opc: str) -> bool:
     while True:
@@ -59,3 +64,9 @@ def procesar_respuesta(respuesta: requests.Response) -> None:
             f"Error HTTP {respuesta.status_code}: {datos.get('error', 'Error desconocido')}")
         return
     print(datos.get("contenido"))
+
+# OJO: Agregar metodo para retornar la pelicula con indice
+
+
+def devolver_pelicula_con_indice() -> int:
+    return 0

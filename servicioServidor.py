@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Any
+from modelos import Pelicula
 import secrets
 from modelos import Permiso, Rol
 security = HTTPBasic()
@@ -35,15 +36,14 @@ def get_peliculas() -> dict:
     try:
         with open('movies.json', 'r', encoding='utf-8') as json_file:
             datos = json.load(json_file)
-        # Devuelve diccionario porque es un método interno que no se va a usar para nada más que
         return {"status": status.HTTP_200_OK, "datos": datos}
     except FileNotFoundError:
-        return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": "El archivo 'movies.json' no existe."}
+        return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": "El archivo 'movies.json' no existe"}
     except Exception as e:
         return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": f"Error inesperado: {str(e)}"}
 
 
-def get_titulos() -> JSONResponse:
+def get_todos_titulos() -> JSONResponse:
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -59,6 +59,9 @@ def get_titulos() -> JSONResponse:
         status_code=status.HTTP_200_OK,
         content={"contenido": cadena_respuesta}
     )
+
+# OJO: Devolver los datos de la pelicula formateados
+# OJO: Crear funcion para formatear peliculas
 
 
 def get_peliculas_por_titulo(filtro_titulo: str) -> JSONResponse:
@@ -187,7 +190,7 @@ def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
 
 def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONResponse:
     '''
-    A partir de un género,
+    A partir de un género y un actor devuelve la filmografía que cumple con lo especificado
     '''
     respuesta = get_peliculas()
 
@@ -218,6 +221,35 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONRes
     )
 
 
+def get_pelicula_id(titulo: str, año: int):
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(
+            status_code=respuesta["status"],
+            content={"error": respuesta.get("error")}
+        )
+    peliculas = respuesta['datos']
+    id = None
+    pelicula_encontrada = None
+    for i, pelicula in enumerate(peliculas):
+        if pelicula['title'].upper() == titulo.upper().strip() and pelicula['year'] == año:
+            id = i
+            pelicula_encontrada = pelicula
+            break
+
+    if id is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                'error': f'No se encontró la pelicula solicitada - {titulo} ({año})'}
+        )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"contenido": {"id": id, "pelicula": pelicula_encontrada}}
+    )
+
+
 def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
     '''Stringbuilder que permite concatenar títulos con un formato fijo'''
     cadena_formateada = ""
@@ -231,10 +263,17 @@ def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
     return cadena_formateada
 
 
-def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
+def post_pelicula(pelicula: Pelicula, permisos: list[str]) -> JSONResponse:
     '''
     Método que permite persistir una película en el archivo 'movies.json'
     '''
+    if Permiso.CREAR not in permisos:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "error": "No tiene los permisos necesarios para realizar esta acción"}
+        )
+
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -244,7 +283,7 @@ def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
         )
 
     peliculas = respuesta["datos"]
-    peliculas.append(pelicula)
+    peliculas.append(pelicula.model_dump())
 
     try:
         with open('movies.json', 'w', encoding='utf-8') as archivo:
@@ -255,9 +294,15 @@ def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
             content={"error": f"No se pudo guardar la película: {str(e)}"}
         )
     return JSONResponse(
-        status_code=status.HTTP_200_OK,
+        status_code=status.HTTP_201_CREATED,
         content={"contenido": "Película agregada con éxito"}
     )
+
+# OJO: Metodo para modificar
+
+
+def put_pelicula(pelicula: Pelicula, id: int, permisos: list[str]):
+    pass
 
 
 def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
