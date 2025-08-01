@@ -36,6 +36,7 @@ def crear_pelicula() -> dict[str, str | int | list[str]]:
 
 
 def modificar_pelicula():
+    # pelicula['title'] = nuevo nombre
     pass
 
 
@@ -66,7 +67,6 @@ def procesar_respuesta(respuesta: requests.Response) -> None:
     print(datos.get("contenido"))
 
 # OJO: Agregar metodo para retornar la pelicula con indice
-
 
 def devolver_pelicula_con_indice() -> int:
     return 0

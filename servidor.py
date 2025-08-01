@@ -9,6 +9,8 @@ import servicioServidor as ss
 security = HTTPBasic()
 app = FastAPI()
 
+#OJO: metodo que descargue el archivo en la ruta especificada
+#Que se ejecute siempre que no exista el archivo en el servidor
 
 @app.get("/allMovies")
 def allMovies() -> JSONResponse:
