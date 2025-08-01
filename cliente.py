@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
-
+import servicioCliente as sc
+from modelos import Permiso, Rol
 #credenciales = HTTPBasicAuth <- variable global
 #permisos_usuario = [...]
 # USUARIO
@@ -80,37 +81,22 @@ def menu_consultas():
             consultar_todas()
             
         elif opcion == '2':
-            titulo = input("Ingrese un título: ")
-            buscar_por_titulo(titulo)
+            buscar_por_titulo()
             
         elif opcion == '3':
-            actor = input("Ingrese un actor: ")
-            buscar_filmografia(actor)
+            buscar_filmografia()
             
         elif opcion == '4':
-            i=0
-            generos = []
-            while(True):
-                i += 1
-                generos.append(input(f'Ingrese un género ({i}):'))
-                opcion = input('¿Desea seguir ingresando géneros? (S/N): ').strip().upper()
-                if opcion == 'N':
-                    break
-            buscar_por_genero(generos)
+            buscar_por_genero()
                     
         elif opcion == '5':
-            titulo = input("Ingrese un título: ")
-            buscar_sinopsis(titulo)
+            buscar_sinopsis()
             
         elif opcion == '6':
-            #OJO: Try catch por si ingresan un valor que no sea entero
-            año = int(input("Ingrese un año: "))
-            buscar_peliculas_año(año)
+            buscar_peliculas_año()
             
         elif opcion == '7':
-            actor = input('Ingrese un actor: ')
-            genero = input('Ingrese un género: ')
-            buscar_filmografia_genero(actor,genero)
+            buscar_filmografia_genero()
             
         elif opcion == '0':
             break
@@ -122,31 +108,49 @@ def menu_consultas():
 #Métodos GET
 def consultar_todas():
     respuesta = requests.get("http://localhost:8000/allMovies")
-    print(respuesta.json())
+    sc.procesar_respuesta(respuesta)
 
-def buscar_por_titulo(titulo: str) -> None:
+def buscar_por_titulo() -> None:
+    titulo = input("Ingrese un título: ")
     respuesta = requests.get("http://localhost:8000/filteredMovies", params = {"title": titulo})
-    print(respuesta.json())
+    sc.procesar_respuesta(respuesta)
 
-def buscar_filmografia(actor: str) -> None:
+def buscar_filmografia() -> None:
+    actor = input("Ingrese un actor: ")
     respuesta = requests.get("http://localhost:8000/filmography", params = {"name": actor})
-    print(respuesta.json())
-
-def buscar_por_genero(generos: list[str]) -> None:
+    sc.procesar_respuesta(respuesta)
+    
+def buscar_por_genero() -> None:
+    i=0
+    generos = []
+    while(True):
+        i += 1
+        generos.append(input(f'Ingrese un género ({i}):'))
+        opcion = input('¿Desea seguir ingresando géneros? (S/N): ').strip().upper()
+        if opcion == 'N':
+            break
     respuesta = requests.get("http://localhost:8000/moviesByGender", params = {"generos": generos})
-    print(respuesta.json())
+    sc.procesar_respuesta(respuesta)
 
-def buscar_sinopsis(titulo: str) -> None:
+def buscar_sinopsis() -> None:
+    titulo = input("Ingrese un título: ")
     respuesta = requests.get("http://localhost:8000/movieSinopsis", params = {"title": titulo})
-    print(respuesta.json())
-
-def buscar_peliculas_año(año: int) -> None:
+    sc.procesar_respuesta(respuesta)
+    
+def buscar_peliculas_año() -> None:
+    '''
+    Requiere: Input de un año
+    Devuelve: Lista de películas de dicho año
+    '''
+    año = sc.validar_entero('Ingrese el año de estreno: ', "Error: Ingrese un año válido")
     respuesta = requests.get("http://localhost:8000/moviesByYear", params = {"year": año})
-    print(respuesta.json())
-
-def buscar_filmografia_genero(actor: str, genero: str) -> None:
+    sc.procesar_respuesta(respuesta)
+    
+def buscar_filmografia_genero() -> None:
+    actor = input('Ingrese un actor: ')
+    genero = input('Ingrese un género: ')
     respuesta = requests.get("http://localhost:8000/filmographyByGender", params = {"name": actor, "gender": genero})
-    print(respuesta.json())
+    sc.procesar_respuesta(respuesta)
 
 #Metodos POST
 #|-----------------------------------------------------------------------|    
@@ -163,48 +167,15 @@ def agregar_pelicula():
     permisos = verificar_permisos()
     if not permisos:
         return
-    #Magic string por conveniencia
-    if not("crear" in permisos or "todo" in permisos):
+    #Sacamos los magic strings en favor del uso de enums
+    if not(Permiso.CREAR in permisos or Permiso.TODO in permisos):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    pelicula = crear_pelicula()
+    pelicula = sc.crear_pelicula()
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
                             json= pelicula)
-    
-def crear_pelicula() -> dict[str, str|int|list[str]]:
-    titulo = input("Ingrese el título de la película: ").strip()
-    #OJO: Try Catch por si ingresan una letra
-    año = int(input("Ingrese el año de estreno: "))
-    elenco = []
-    opc = input('¿Desea ingresar el elenco? (S/N): ').upper().strip()
-    if(validar_opcion(opc) == 'S'):
-        cadena_elenco = input(f"Ingrese el/los miembro/s del elenco, separados por coma: ")
-        elenco = map(str.strip, cadena_elenco.split(sep=','))
-    generos = []
-    opc = input("¿Desea ingresar los géneros de la película? (S/N): ").strip().upper()
-    if validar_opcion(opc) == 'S':
-        generos_cadena = (input(f"Ingrese los generos de la película separados por coma: "))
-        generos = map(str.strip, generos_cadena.split(','))
-    sinopsis = ""
-    opc = input("¿Desea ingresar una sinopsis? (S/N): ").strip().upper()
-    if validar_opcion(opc) == 'S':
-        sinopsis = input("Ingrese la sinopsis: ")
-    pelicula = {
-        "title" : titulo,
-        "year": año,
-        "cast": elenco,
-        "genres": generos,
-        "extract": sinopsis
-    }
-    return pelicula
-        
-def validar_opcion(opc:str)-> str:
-    while True:
-        if(opc != "N" and opc != "S"):
-            print("Opción incorrecta. Reintente (S/N).")
-        else:
-            break
-    return opc  
+    sc.procesar_respuesta(respuesta)
+
 
 def modificar_pelicula():
     pass
