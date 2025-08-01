@@ -6,9 +6,12 @@ from modelos import Permiso, Rol
 usuario_actual = None
 contraseña_actual = None
 permisos_usuario = []
-
+sesion_iniciada = False
 def menu_general():
-    verificar_permisos()
+    global sesion_iniciada
+    while not sesion_iniciada:
+        verificar_permisos()
+    
     while True: 
         print("--           General             --")
         print("-    1.  Menú de consultas        -")
@@ -205,10 +208,10 @@ def verificar_permisos() -> list[str]:
         print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
         return []  # Permite verificar si el usuario existe o las credenciales ingresadas son correctas
     else:
-        global usuario_actual, contraseña_actual, permisos_usuario
+        global permisos_usuario, sesion_iniciada, usuario_actual
         usuario_actual = usuario
-        contraseña_actual = contraseña_actual
         permisos_usuario = r.json()['permisos']
+        sesion_iniciada = True
         print("Acceso concedido, bienvenido.")
         return r.json()
 
