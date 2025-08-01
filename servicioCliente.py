@@ -52,9 +52,9 @@ def validar_entero(mensaje_input: str, mensaje_error: str) -> int:
 
 
 def procesar_respuesta(respuesta: requests.Response) -> None:
-    data = respuesta.json()
+    datos = respuesta.json()
     if respuesta.status_code not in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
         print(
-            f"Error HTTP {respuesta.status_code}: {data.get('error', 'Error desconocido')}")
+            f"Error HTTP {respuesta.status_code}: {datos.get('error', 'Error desconocido')}")
         return
-    print(data.get("contenido"))
+    print(datos.get("contenido"))

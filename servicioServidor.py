@@ -186,6 +186,9 @@ def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
 
 
 def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONResponse:
+    '''
+    A partir de un género,
+    '''
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -196,13 +199,13 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONRes
 
     peliculas = respuesta["datos"]
     filmografia = []
-    filtro_actor_upper = filtro_actor.upper().strip()
-    filtro_genero_upper = filtro_genero.upper().strip()
+    actor = filtro_actor.upper().strip()
+    genero = filtro_genero.upper().strip()
 
     for pelicula in peliculas:
-        cast_upper = map(str.upper, pelicula.get('cast', []))
-        genres_upper = map(str.upper, pelicula.get('genres', []))
-        if filtro_actor_upper in cast_upper and filtro_genero_upper in genres_upper:
+        elenco = map(str.upper, pelicula.get('cast', []))
+        generos = map(str.upper, pelicula.get('genres', []))
+        if actor in elenco and genero in generos:
             filmografia.append(pelicula)
 
     cadena_respuesta = f'\nPelículas del actor {filtro_actor.title()} y género {filtro_genero.title()}:\n'
@@ -216,6 +219,7 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONRes
 
 
 def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
+    '''Stringbuilder que permite concatenar títulos con un formato fijo'''
     cadena_formateada = ""
     i = 0
     # OJO: Tal vez ordenar alfabeticamente
@@ -228,6 +232,9 @@ def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
 
 
 def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
+    '''
+    Método que permite persistir una película en el archivo 'movies.json'
+    '''
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -249,11 +256,14 @@ def post_pelicula(pelicula: dict[str, str | int | list[str]]) -> JSONResponse:
         )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"mensaje": "Película agregada con éxito"}
+        content={"contenido": "Película agregada con éxito"}
     )
 
 
 def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
+    '''
+    Método que permite la obtención de los permisos del usuario según sus credenciales de login
+    '''
     # Buscar el usuario en la base de datos, extraer la contraseña, comparar
     usuario = buscar_usuario(credenciales.username)
     if (not usuario):
