@@ -187,8 +187,66 @@ def agregar_pelicula():
 
 
 def modificar_pelicula():
-    # PUT
-    pass
+    global permisos_usuario, usuario_actual, contraseña_actual
+    
+    if not permisos_usuario or (Permiso.EDITAR not in permisos_usuario and Permiso.TODO not in permisos_usuario):
+        print("No tiene los permisos necesarios para realizar esta acción.")
+        return
+
+    titulo = input("Ingrese el título de la película a modificar: ").strip()
+    año = validar_entero("Ingrese el año de estreno original: ", "Error: Ingrese un año válido.")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    r = requests.get(
+        "http://localhost:8000/obtenerPeliculaPorId",
+        params={"titulo": titulo, "año": año},
+        auth=auth
+    )
+    if r.status_code != 200:
+        procesar_respuesta(r)
+        return
+    contenido = r.json()["contenido"]
+    pelicula_a_modificar = contenido["pelicula"]
+    id_pelicula = contenido["id"]
+    pelicula_modificada = pelicula_a_modificar.copy()
+
+    while True:
+        print("\n----- Menú de Modificación -----")
+        print(f"1. Título actual: {pelicula_modificada.get('title')}")
+        print(f"2. Año actual: {pelicula_modificada.get('year')}")
+        print(f"3. Elenco actual: {', '.join(pelicula_modificada.get('cast', []))}")
+        print(f"4. Géneros actuales: {', '.join(pelicula_modificada.get('genres', []))}")
+        print(f"5. Sinopsis actual: {pelicula_modificada.get('extract', 'No disponible')}")
+        print("-------------------------------")
+        print("6. Guardar cambios y salir")
+        print("0. Cancelar y salir")
+
+        opcion = input("Seleccione el campo a modificar (1-5) o una acción (6, 0): ").strip()
+        
+        if opcion == '1':
+            pelicula_modificada["title"] = input("Ingrese el nuevo título: ").strip()
+        elif opcion == '2':
+            pelicula_modificada["year"] = validar_entero("Ingrese el nuevo año: ", "Error: Año inválido.")
+        elif opcion == '3':
+            elenco_str = input("Ingrese el nuevo elenco separado por coma: ")
+            pelicula_modificada["cast"] = [a.strip() for a in elenco_str.split(',')]
+        elif opcion == '4':
+            generos_str = input("Ingrese los nuevos géneros separados por coma: ")
+            pelicula_modificada["genres"] = [g.strip() for g in generos_str.split(',')]
+        elif opcion == '5':
+            pelicula_modificada["extract"] = input("Ingrese la nueva sinopsis: ")
+        elif opcion == '6':
+            respuesta = requests.put(
+                f"http://localhost:8000/modificarPelicula/{id_pelicula}",
+                json=pelicula_modificada,
+                auth=auth
+            )
+            procesar_respuesta(respuesta)
+            break
+        elif opcion == '0':
+            print("Modificación cancelada.")
+            break
+        else:
+            print("Opción inválida. Intente nuevamente.")
 
 
 def borrar_pelicula():
