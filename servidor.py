@@ -29,6 +29,33 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 #OJO: metodo que descargue el archivo en la ruta especificada
 #Que se ejecute siempre que no exista el archivo en el servidor
 
+VENTANA = timedelta(seconds = 1)   # Ventana de tiempo
+MAX_PETICIONES = 10             # Máximo de peticiones dentro de la ventana
+
+cubos_ip: Dict[str, Deque[datetime]] = {}
+
+@app.middleware("http")
+async def limitador(request: Request, call_next):
+    ip = request.client.host
+    ahora = datetime.now()
+
+    cubo = cubos_ip.setdefault(ip, deque())
+
+    # Eliminar timestamps fuera de la ventana
+    while cubo and (ahora - cubo[0]) > VENTANA:
+        cubo.popleft()
+
+    if len(cubo) >= MAX_PETICIONES:
+        raise HTTPException(
+            status_code = status.HTTP_429_TOO_MANY_REQUESTS,
+            detail = "Demasiadas solicitudes: límite 10 req/s",
+        )
+
+    cubo.append(ahora)
+    respuesta = await call_next(request)
+    return respuesta
+
+
 @app.get("/allMovies")
 def allMovies() -> JSONResponse:
     return ss.get_todos_titulos()
