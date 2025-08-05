@@ -170,16 +170,6 @@ def buscar_filmografia_genero() -> None:
         "http://localhost:8000/filmographyByGender", params={"name": actor, "gender": genero})
     sc.procesar_respuesta(respuesta)
 
-# Metodos POST
-# |-----------------------------------------------------------------------|
-# | En los POST y DELETE como parámetro de los métodos hay que agregar:   |
-# | "credentials: HTTPBasicCredentials = Depends(verificar_credenciales)" |
-# | para que si las credenciales son correctas pueda usar los métodos y   |
-# | si no entonces no se ejecutan                                         |
-# |-----------------------------------------------------------------------|
-
-# FastAPI interpreta cada parámetro con Depends() como una dependencia que se debe ejecutar antes de procesar el endpoint. Es como un filtro previo
-
 
 def agregar_pelicula():
     global permisos_usuario
@@ -201,8 +191,21 @@ def modificar_pelicula():
 
 
 def borrar_pelicula():
-    # DELETE
-    pass
+    global permisos_usuario, usuario_actual, contraseña_actual
+    if not permisos_usuario:
+        return
+    if not (Permiso.ELIMINAR in permisos_usuario or Permiso.TODO in permisos_usuario):
+        print("No tiene los permisos necesarios para realizar esta acción.")
+        return
+    titulo = input("Ingrese el título exacto de la película: ").strip()
+    año = sc.validar_entero("Ingrese el año de estreno: ", "Error: Ingrese un año válido")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    respuesta = requests.delete(
+        "http://localhost:8000/eliminarPelicula",
+        params = {"title": titulo, "year": año},
+        auth = auth
+    )
+    sc.procesar_respuesta(respuesta)
 
 
 def verificar_permisos():

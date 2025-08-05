@@ -34,7 +34,7 @@ usuarios = [{
 
 def get_peliculas() -> dict:
     try:
-        with open('movies.json', 'r', encoding='utf-8') as json_file:
+        with open('movies.json', 'r', encoding = 'utf-8') as json_file:
             datos = json.load(json_file)
         return {"status": status.HTTP_200_OK, "datos": datos}
     except FileNotFoundError:
@@ -313,8 +313,8 @@ def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security
     usuario = buscar_usuario(credenciales.username)
     if (not usuario):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado"
+            status_code = status.HTTP_401_UNAUTHORIZED,
+            detail = "Usuario no encontrado"
         )
 
     usuario_correcto = secrets.compare_digest(
@@ -335,3 +335,39 @@ def buscar_usuario(username: str) -> dict[str, Any] | None:
         if username == usuario['username']:
             return usuario
     return None
+
+
+def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[str]) -> JSONResponse:
+    if Permiso.ELIMINAR not in permisos and Permiso.TODO not in permisos:
+        return JSONResponse(
+            status_code = status.HTTP_403_FORBIDDEN,
+            content = {"error": "No tiene los permisos necesarios para realizar esta acción"}
+        )
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(
+            status_code = respuesta["status"],
+            content = {"error": respuesta.get("error")}
+        )
+    peliculas = respuesta["datos"]
+    titulo = titulo.strip().upper()
+    año = int(año)
+    nueva_lista = [p for p in peliculas if not (
+        p["title"].strip().upper() == titulo and p.get("year") == año)]
+    if len(nueva_lista) == len(peliculas):
+        return JSONResponse(
+            status_code = status.HTTP_404_NOT_FOUND,
+            content = {"error": f"No se encontró la película '{titulo}' del año {año}"}
+        )
+    try:
+        with open("movies.json", "w", encoding="utf-8") as f:
+            json.dump(nueva_lista, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        return JSONResponse(
+            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content = {"error": f"No se pudo eliminar la película: {str(e)}"}
+        )
+    return JSONResponse(
+        status_code = status.HTTP_200_OK,
+        content = {"contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
+    )
