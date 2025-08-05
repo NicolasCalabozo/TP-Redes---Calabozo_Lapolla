@@ -75,8 +75,7 @@ def obtenerPelicula(titulo: str, año: int):
 
 
 @app.post("/verificarAcceso")
-def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
-    permisos = ss.verificar_credenciales(credentials)
+def verificarAcceso(permisos: dict = Depends(ss.verificar_credenciales)):
     return {"permisos": permisos}
 
 

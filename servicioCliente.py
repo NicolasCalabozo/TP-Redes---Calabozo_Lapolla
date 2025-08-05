@@ -1,6 +1,6 @@
 import requests
 from fastapi import status
-
+from typing import Callable, Any
 
 def crear_pelicula() -> dict[str, str | int | list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
@@ -40,6 +40,22 @@ def modificar_pelicula():
     pass
 
 
+
+
+
+def procesar_respuesta(respuesta: requests.Response) -> None:
+    datos = respuesta.json()
+    if respuesta.status_code not in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
+        print(
+            f"Error HTTP {respuesta.status_code}: {datos.get('error', 'Error desconocido')}")
+        return
+    print(datos.get("contenido"))
+
+# OJO: Agregar metodo para retornar la pelicula con indice
+
+def devolver_pelicula_con_indice() -> int:
+    return 0
+
 def validar_opcion(opc: str) -> bool:
     while True:
         if (opc != "N" and opc != "S"):
@@ -56,17 +72,12 @@ def validar_entero(mensaje_input: str, mensaje_error: str) -> int:
             return int(valor)
         except ValueError:
             print(mensaje_error)
+        
 
-
-def procesar_respuesta(respuesta: requests.Response) -> None:
-    datos = respuesta.json()
-    if respuesta.status_code not in [status.HTTP_200_OK, status.HTTP_201_CREATED]:
-        print(
-            f"Error HTTP {respuesta.status_code}: {datos.get('error', 'Error desconocido')}")
-        return
-    print(datos.get("contenido"))
-
-# OJO: Agregar metodo para retornar la pelicula con indice
-
-def devolver_pelicula_con_indice() -> int:
-    return 0
+def validar_dato_input(mensaje_input: str, mensaje_error: str, tipo_dato: Callable) -> Any:
+    while True:
+        valor = input(mensaje_input)
+        try:
+            return tipo_dato(valor)
+        except (ValueError, TypeError):
+            print(mensaje_error)
