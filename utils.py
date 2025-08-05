@@ -36,3 +36,33 @@ def verificar_permisos(permisos_usuario: list[Permiso], permisos_requeridos: lis
 
 def cadena_mayusculas(cadena: str) -> str:
     return cadena.upper().strip()
+
+def paginar_lista(lista: list, pagina: int = 1, limite: int = 10) -> dict:
+    """
+    Devuelve una porción paginada de una lista con metadatos.
+    
+    Parámetros:
+    - lista: Lista de elementos a paginar
+    - pagina: Número de página (1-indexado)
+    - limite: Cantidad de elementos por página
+    
+    Retorna:
+    - Un diccionario con los resultados paginados y metadatos
+    """
+    total = len(lista)
+    if limite <= 0:
+        limite = 10
+    if pagina <= 0:
+        pagina = 1
+
+    inicio = (pagina - 1) * limite
+    fin = inicio + limite
+    datos = lista[inicio:fin]
+
+    return {
+        "datos": datos,
+        "pagina": pagina,
+        "limite": limite,
+        "total": total,
+        "paginas_totales": (total + limite - 1) // limite  # Redondeo hacia arriba
+    }

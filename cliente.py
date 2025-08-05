@@ -112,11 +112,17 @@ def menu_consultas():
 
 
 def consultar_todas():
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     respuesta = requests.get("http://localhost:8000/allMovies")
     procesar_respuesta(respuesta)
 
 
 def buscar_por_titulo() -> None:
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     titulo = input("Ingrese un título: ")
     respuesta = requests.get(
         "http://localhost:8000/filteredMovies", params={"title": titulo})
@@ -124,6 +130,9 @@ def buscar_por_titulo() -> None:
 
 
 def buscar_filmografia() -> None:
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     actor = input("Ingrese un actor: ")
     respuesta = requests.get(
         "http://localhost:8000/filmography", params={"name": actor})
@@ -131,6 +140,9 @@ def buscar_filmografia() -> None:
 
 
 def buscar_por_genero() -> None:
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     i = 0
     generos = []
     while (True):
@@ -146,6 +158,9 @@ def buscar_por_genero() -> None:
 
 
 def buscar_sinopsis() -> None:
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     titulo = input("Ingrese un título: ")
     respuesta = requests.get(
         "http://localhost:8000/movieSinopsis", params={"title": titulo})
@@ -157,6 +172,9 @@ def buscar_peliculas_año() -> None:
     Requiere: Input de un año
     Devuelve: Lista de películas de dicho año
     '''
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     año = validar_entero('Ingrese el año de estreno: ',
                             "Error: Ingrese un año válido")
     respuesta = requests.get(
@@ -165,6 +183,9 @@ def buscar_peliculas_año() -> None:
 
 
 def buscar_filmografia_genero() -> None:
+    global permisos_usuario
+    if not permisos_usuario:
+        return
     actor = input('Ingrese un actor: ')
     genero = input('Ingrese un género: ')
     respuesta = requests.get(
