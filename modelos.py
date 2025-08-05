@@ -22,13 +22,3 @@ class Pelicula(BaseModel):
     elenco: list[str]
     generos: list[str]
     sinopsis: str
-
-
-class PeliculaRequest(BaseModel):
-    pelicula: Pelicula
-    permisos: list[Permiso]
-
-#OJO: Idea no implementada
-class RequestGenerica(BaseModel):
-    peticion: dict
-    permisos: list[Permiso]

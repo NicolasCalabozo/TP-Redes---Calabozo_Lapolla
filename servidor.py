@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, HTTPException , Query, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import JSONResponse
-from modelos import PeliculaRequest, Permiso
+from modelos import Permiso
 from collections import deque
 from datetime import datetime, timedelta
 from typing import Deque, Dict
@@ -43,56 +43,56 @@ async def limitador(request: Request, call_next):
 
 
 @app.get("/allMovies")
-def allMovies(permisos: list[Permiso]) -> JSONResponse:
+def allMovies(permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_todos_titulos(permisos)
 
 
 @app.get("/filteredMovies")
-def filteredMovies(title: str, permisos: list[Permiso]) -> JSONResponse:
+def filteredMovies(title: str, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_peliculas_por_titulo(title, permisos)
 
 
 @app.get("/filmography")
-def filmography(name: str, permisos: list[Permiso]) -> JSONResponse:
+def filmography(name: str, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_filmografia(name, permisos)
 
 
 @app.get("/moviesByGender")
-def moviesByGender(permisos: list[Permiso],generos: list[str] = Query(...)) -> JSONResponse:
+def moviesByGender(permisos: list[Permiso] = Depends(ss.obtener_permisos) ,generos: list[str] = Query(...)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_peliculas_por_genero(generos, permisos)
 
 
 @app.get("/movieSinopsis")
-def sinopsis(title: str, permisos: list[Permiso]) -> JSONResponse:
+def sinopsis(title: str, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_sinopsis(title, permisos)
 
 
 @app.get("/moviesByYear")
-def moviesByYear(year: int, permisos: list[Permiso]) -> JSONResponse:
+def moviesByYear(year: int, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_peliculas_por_año(year, permisos)
 
 
 @app.get("/filmographyByGender")
-def filmographyByGender(name: str, gender: str, permisos: list[Permiso]) -> JSONResponse:
+def filmographyByGender(name: str, gender: str, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_filmografia_por_genero(name, gender, permisos)
 
 
 @app.post("/agregarPelicula")
-def agregarPelicula(peticion: PeliculaRequest) -> JSONResponse:
+def agregarPelicula(pelicula:Pelicula, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     '''Endpoint de creación de películas'''
-    verificar_permisos(peticion.permisos, [Permiso.CREAR, Permiso.TODO])
-    return ss.post_pelicula(peticion.pelicula, peticion.permisos)
+    verificar_permisos(permisos, [Permiso.CREAR, Permiso.TODO])
+    return ss.post_pelicula(pelicula, permisos)
 
 
 @app.get("/obtenerPeliculaPorId")
-def obtenerPelicula(titulo: str, año: int, permisos: list[Permiso]):
+def obtenerPelicula(titulo: str, año: int, permisos: list[Permiso] = Depends(ss.obtener_permisos)):
     '''Endpoint para obtener una pelicula, con su ID, por año y titulo'''
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_pelicula_id(titulo, año, permisos)
@@ -105,10 +105,11 @@ def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
     return {"permisos": permisos}
 
 @app.delete("/eliminarPelicula")
-def eliminarPelicula(title: str, year: int, permisos: list[Permiso], credentials: HTTPBasicCredentials = Depends(security)) -> JSONResponse:
+def eliminarPelicula(title: str, year: int, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     return ss.eliminar_pelicula_por_titulo_y_año(title, year, permisos)
 
 @app.put("/modificarPelicula/{id_pelicula}")
 def modificar_pelicula(id_pelicula: int, pelicula: Pelicula, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.EDITAR, Permiso.TODO])
     return ss.put_pelicula(pelicula, id_pelicula, permisos)

@@ -301,13 +301,6 @@ def post_pelicula(pelicula: Pelicula, permisos: list[Permiso]) -> JSONResponse:
         content={"contenido": "Película agregada con éxito"}
     )
 
-# OJO: Metodo para modificar
-
-
-def put_pelicula(pelicula: Pelicula, id: int, permisos: list[str]):
-    pass
-
-
 def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security)) -> list[Permiso]:
     '''
     Método que permite la obtención de los permisos del usuario según sus credenciales de login
@@ -368,6 +361,7 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[P
         content={
             "contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
     )
+    
 def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: list[Permiso]) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.EDITAR, Permiso.TODO])
     respuesta = get_peliculas()
@@ -393,6 +387,6 @@ def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: lis
         )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": f"Película '{pelicula_actualizada.title}' modificada con éxito"}
+        content={"contenido": f"Película '{pelicula_actualizada.titulo}' modificada con éxito"}
     )
 

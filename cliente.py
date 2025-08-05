@@ -112,10 +112,11 @@ def menu_consultas():
 
 
 def consultar_todas():
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
-    respuesta = requests.get("http://localhost:8000/allMovies")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    respuesta = requests.get("http://localhost:8000/allMovies", auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -124,23 +125,25 @@ def buscar_por_titulo() -> None:
     if not permisos_usuario:
         return
     titulo = input("Ingrese un título: ")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/filteredMovies", params={"title": titulo})
+        "http://localhost:8000/filteredMovies", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
 
 def buscar_filmografia() -> None:
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     actor = input("Ingrese un actor: ")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/filmography", params={"name": actor})
+        "http://localhost:8000/filmography", params={"name": actor}, auth = auth)
     procesar_respuesta(respuesta)
 
 
 def buscar_por_genero() -> None:
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     i = 0
@@ -152,18 +155,20 @@ def buscar_por_genero() -> None:
             '¿Desea seguir ingresando géneros? (S/N): '))
         if opcion == 'N':
             break
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/moviesByGender", params={"generos": generos})
+        "http://localhost:8000/moviesByGender", params={"generos": generos}, auth=auth)
     procesar_respuesta(respuesta)
 
 
 def buscar_sinopsis() -> None:
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     titulo = input("Ingrese un título: ")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/movieSinopsis", params={"title": titulo})
+        "http://localhost:8000/movieSinopsis", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -172,29 +177,31 @@ def buscar_peliculas_año() -> None:
     Requiere: Input de un año
     Devuelve: Lista de películas de dicho año
     '''
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     año = validar_entero('Ingrese el año de estreno: ',
                             "Error: Ingrese un año válido")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/moviesByYear", params={"year": año})
+        "http://localhost:8000/moviesByYear", params={"year": año}, auth=auth)
     procesar_respuesta(respuesta)
 
 
 def buscar_filmografia_genero() -> None:
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     actor = input('Ingrese un actor: ')
     genero = input('Ingrese un género: ')
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/filmographyByGender", params={"name": actor, "gender": genero})
+        "http://localhost:8000/filmographyByGender", params={"name": actor, "gender": genero}, auth=auth)
     procesar_respuesta(respuesta)
 
 
 def agregar_pelicula():
-    global permisos_usuario
+    global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
     # Sacamos los magic strings en favor del uso de enums
@@ -202,8 +209,9 @@ def agregar_pelicula():
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     pelicula = crear_pelicula()
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
-                              json={"pelicula": pelicula, "permisos": permisos_usuario})
+                              json={"pelicula": pelicula}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -216,7 +224,7 @@ def modificar_pelicula():
 
     titulo = input("Ingrese el título de la película a modificar: ").strip()
     año = validar_entero("Ingrese el año de estreno original: ", "Error: Ingrese un año válido.")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     r = requests.get(
         "http://localhost:8000/obtenerPeliculaPorId",
         params={"titulo": titulo, "año": año},
@@ -282,7 +290,7 @@ def borrar_pelicula():
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.delete(
         "http://localhost:8000/eliminarPelicula",
-        params = {"title": titulo, "year": año, "permisos": permisos_usuario},
+        params = {"title": titulo, "year": año},
         auth = auth
     )
     procesar_respuesta(respuesta)
