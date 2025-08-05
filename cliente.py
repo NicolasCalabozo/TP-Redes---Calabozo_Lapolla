@@ -9,7 +9,7 @@ contraseña_actual = None
 permisos_usuario = []
 sesion_iniciada = False
 
-BASE_URL = "192.168.1.70:8000"
+BASE_URL = "http://192.168.1.70:8000"
 
 def menu_general():
     global sesion_iniciada
@@ -117,7 +117,7 @@ def consultar_todas():
     if not permisos_usuario:
         return
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
-    respuesta = requests.get(f"http://{BASE_URL}/allMovies", auth=auth)
+    respuesta = requests.get(f"{BASE_URL}/allMovies", auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -128,7 +128,7 @@ def buscar_por_titulo() -> None:
     titulo = input("Ingrese un título: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/filteredMovies", params={"title": titulo}, auth=auth)
+        f"{BASE_URL}/filteredMovies", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -139,7 +139,7 @@ def buscar_filmografia() -> None:
     actor = input("Ingrese un actor: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/filmography", params={"name": actor}, auth = auth)
+        f"{BASE_URL}/filmography", params={"name": actor}, auth = auth)
     procesar_respuesta(respuesta)
 
 
@@ -158,7 +158,7 @@ def buscar_por_genero() -> None:
             break
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/moviesByGender", params={"generos": generos}, auth=auth)
+        f"{BASE_URL}/moviesByGender", params={"generos": generos}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -169,7 +169,7 @@ def buscar_sinopsis() -> None:
     titulo = input("Ingrese un título: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/movieSinopsis", params={"title": titulo}, auth=auth)
+        f"{BASE_URL}/movieSinopsis", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -185,7 +185,7 @@ def buscar_peliculas_año() -> None:
                             "Error: Ingrese un año válido")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/moviesByYear", params={"year": año}, auth=auth)
+        f"{BASE_URL}/moviesByYear", params={"year": año}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -197,7 +197,7 @@ def buscar_filmografia_genero() -> None:
     genero = input('Ingrese un género: ')
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.get(
-        f"http://{BASE_URL}/filmographyByGender", params={"name": actor, "gender": genero}, auth=auth)
+        f"{BASE_URL}/filmographyByGender", params={"name": actor, "gender": genero}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -205,14 +205,16 @@ def agregar_pelicula():
     global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
-    # Sacamos los magic strings en favor del uso de enums
     if not (Permiso.CREAR in permisos_usuario or Permiso.TODO in permisos_usuario):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     pelicula = crear_pelicula()
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
-    respuesta = requests.post(f"http://{BASE_URL}/agregarPelicula",
-                              json={"pelicula": pelicula}, auth=auth)
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    
+    # CORRECCIÓN: Se envía el diccionario de la película directamente, no un objeto anidado
+    respuesta = requests.post(f"{BASE_URL}/agregarPelicula",
+                              json=pelicula,
+                              auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -227,7 +229,7 @@ def modificar_pelicula():
     año = validar_entero("Ingrese el año de estreno original: ", "Error: Ingrese un año válido.")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     r = requests.get(
-        f"http://{BASE_URL}/obtenerPeliculaPorId",
+        f"{BASE_URL}/obtenerPeliculaPorId",
         params={"titulo": titulo, "año": año},
         auth=auth
     )
@@ -266,7 +268,7 @@ def modificar_pelicula():
             pelicula_modificada["extract"] = input("Ingrese la nueva sinopsis: ")
         elif opcion == '6':
             respuesta = requests.put(
-                f"http://{BASE_URL}/modificarPelicula/{id_pelicula}",
+                f"{BASE_URL}/modificarPelicula/{id_pelicula}",
                 json=pelicula_modificada,
                 auth=auth
             )
@@ -290,28 +292,47 @@ def borrar_pelicula():
     año = validar_entero("Ingrese el año de estreno: ", "Error: Ingrese un año válido")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.delete(
-        f"http://{BASE_URL}/eliminarPelicula",
+        f"{BASE_URL}/eliminarPelicula",
         params = {"title": titulo, "year": año},
         auth = auth
     )
     procesar_respuesta(respuesta)
 
 
+#def verificar_permisos():
+ #   usuario = input("Ingrese su usuario: ").strip()
+  #  contraseña = input("Ingrese su contraseña: ").strip()
+    # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
+   # auth = HTTPBasicAuth(usuario, contraseña)
+    #r = requests.post(f"http://{BASE_URL}/verificarAcceso", auth=auth)
+    #if r.status_code != 200:
+     #   print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
+    #else:
+     #   global permisos_usuario, sesion_iniciada, usuario_actual
+      #  usuario_actual = usuario
+       # permisos_usuario = r.json()['permisos']
+        #sesion_iniciada = True
+        #print("Acceso concedido, bienvenido.")
 def verificar_permisos():
+    global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada
     usuario = input("Ingrese su usuario: ").strip()
     contraseña = input("Ingrese su contraseña: ").strip()
-    # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario, contraseña)
-    r = requests.post(f"http://{BASE_URL}/verificarAcceso", auth=auth)
-    if r.status_code != 200:
-        print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
-    else:
-        global permisos_usuario, sesion_iniciada, usuario_actual
-        usuario_actual = usuario
-        permisos_usuario = r.json()['permisos']
-        sesion_iniciada = True
-        print("Acceso concedido, bienvenido.")
-
+    
+    try:
+        r = requests.post(f"{BASE_URL}/verificarAcceso", auth=auth)
+        
+        if r.status_code != 200:
+            # CORRECCIÓN: Usar 'detail' para obtener el mensaje de error de FastAPI
+            print(f"Acceso denegado: {r.json().get('detail')}")
+        else:
+            usuario_actual = usuario
+            contraseña_actual = contraseña # CORRECCIÓN: Guardar la contraseña para llamadas posteriores
+            permisos_usuario = r.json()['permisos']
+            sesion_iniciada = True
+            print("Acceso concedido, bienvenido.")
+    except requests.exceptions.ConnectionError:
+        print(f"Error de conexión: No se pudo conectar al servidor en {BASE_URL}")
 
 menu_general()
 
