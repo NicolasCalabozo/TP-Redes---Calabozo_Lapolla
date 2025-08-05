@@ -267,7 +267,7 @@ def post_pelicula(pelicula: Pelicula, permisos: list[str]) -> JSONResponse:
     '''
     Método que permite persistir una película en el archivo 'movies.json'
     '''
-    if Permiso.CREAR not in permisos:
+    if Permiso.CREAR not in permisos and Permiso.TODO not in permisos:
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
             content={
@@ -305,7 +305,7 @@ def put_pelicula(pelicula: Pelicula, id: int, permisos: list[str]):
     pass
 
 
-def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
+def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
     '''
     Método que permite la obtención de los permisos del usuario según sus credenciales de login
     '''
@@ -316,13 +316,11 @@ def verificar_credenciales(credenciales: HTTPBasicCredentials = Depends(security
             status_code = status.HTTP_401_UNAUTHORIZED,
             detail = "Usuario no encontrado"
         )
-
-    usuario_correcto = secrets.compare_digest(
-        credenciales.username, usuario['username'])
+        
     contraseña_correcta = secrets.compare_digest(
         credenciales.password,  usuario['password'])
 
-    if not (usuario_correcto and contraseña_correcta):
+    if not (usuario and contraseña_correcta):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Credenciales incorrectas"
@@ -371,3 +369,6 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[s
         status_code = status.HTTP_200_OK,
         content = {"contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
     )
+    
+    def test_permisos():
+        
