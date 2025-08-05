@@ -115,7 +115,7 @@ def consultar_todas():
     global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario:
         return
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get("http://localhost:8000/allMovies", auth=auth)
     procesar_respuesta(respuesta)
 
@@ -125,7 +125,7 @@ def buscar_por_titulo() -> None:
     if not permisos_usuario:
         return
     titulo = input("Ingrese un título: ")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
         "http://localhost:8000/filteredMovies", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
@@ -136,9 +136,9 @@ def buscar_filmografia() -> None:
     if not permisos_usuario:
         return
     actor = input("Ingrese un actor: ")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
-        "http://localhost:8000/filmography", params={"name": actor}, auth = auth)
+        "http://localhost:8000/filmography", params={"name": actor}, auth=auth)
     procesar_respuesta(respuesta)
 
 
@@ -155,7 +155,7 @@ def buscar_por_genero() -> None:
             '¿Desea seguir ingresando géneros? (S/N): '))
         if opcion == 'N':
             break
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
         "http://localhost:8000/moviesByGender", params={"generos": generos}, auth=auth)
     procesar_respuesta(respuesta)
@@ -166,7 +166,7 @@ def buscar_sinopsis() -> None:
     if not permisos_usuario:
         return
     titulo = input("Ingrese un título: ")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
         "http://localhost:8000/movieSinopsis", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
@@ -181,8 +181,8 @@ def buscar_peliculas_año() -> None:
     if not permisos_usuario:
         return
     año = validar_entero('Ingrese el año de estreno: ',
-                            "Error: Ingrese un año válido")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+                         "Error: Ingrese un año válido")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
         "http://localhost:8000/moviesByYear", params={"year": año}, auth=auth)
     procesar_respuesta(respuesta)
@@ -194,7 +194,7 @@ def buscar_filmografia_genero() -> None:
         return
     actor = input('Ingrese un actor: ')
     genero = input('Ingrese un género: ')
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
         "http://localhost:8000/filmographyByGender", params={"name": actor, "gender": genero}, auth=auth)
     procesar_respuesta(respuesta)
@@ -209,7 +209,7 @@ def agregar_pelicula():
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     pelicula = crear_pelicula()
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
                               json={"pelicula": pelicula}, auth=auth)
     procesar_respuesta(respuesta)
@@ -217,14 +217,15 @@ def agregar_pelicula():
 
 def modificar_pelicula():
     global permisos_usuario, usuario_actual, contraseña_actual
-    
+
     if not permisos_usuario or (Permiso.EDITAR not in permisos_usuario and Permiso.TODO not in permisos_usuario):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
 
     titulo = input("Ingrese el título de la película a modificar: ").strip()
-    año = validar_entero("Ingrese el año de estreno original: ", "Error: Ingrese un año válido.")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    año = validar_entero("Ingrese el año de estreno original: ",
+                         "Error: Ingrese un año válido.")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     r = requests.get(
         "http://localhost:8000/obtenerPeliculaPorId",
         params={"titulo": titulo, "año": año},
@@ -242,27 +243,37 @@ def modificar_pelicula():
         print("\n----- Menú de Modificación -----")
         print(f"1. Título actual: {pelicula_modificada.get('title')}")
         print(f"2. Año actual: {pelicula_modificada.get('year')}")
-        print(f"3. Elenco actual: {', '.join(pelicula_modificada.get('cast', []))}")
-        print(f"4. Géneros actuales: {', '.join(pelicula_modificada.get('genres', []))}")
-        print(f"5. Sinopsis actual: {pelicula_modificada.get('extract', 'No disponible')}")
+        print(
+            f"3. Elenco actual: {', '.join(pelicula_modificada.get('cast', []))}")
+        print(
+            f"4. Géneros actuales: {', '.join(pelicula_modificada.get('genres', []))}")
+        print(
+            f"5. Sinopsis actual: {pelicula_modificada.get('extract', 'No disponible')}")
         print("-------------------------------")
         print("6. Guardar cambios y salir")
         print("0. Cancelar y salir")
 
-        opcion = input("Seleccione el campo a modificar (1-5) o una acción (6, 0): ").strip()
-        
+        opcion = input(
+            "Seleccione el campo a modificar (1-5) o una acción (6, 0): ").strip()
+
         if opcion == '1':
-            pelicula_modificada["title"] = input("Ingrese el nuevo título: ").strip()
+            pelicula_modificada["title"] = input(
+                "Ingrese el nuevo título: ").strip()
         elif opcion == '2':
-            pelicula_modificada["year"] = validar_entero("Ingrese el nuevo año: ", "Error: Año inválido.")
+            pelicula_modificada["year"] = validar_entero(
+                "Ingrese el nuevo año: ", "Error: Año inválido.")
         elif opcion == '3':
             elenco_str = input("Ingrese el nuevo elenco separado por coma: ")
-            pelicula_modificada["cast"] = [a.strip() for a in elenco_str.split(',')]
+            pelicula_modificada["cast"] = [a.strip()
+                                           for a in elenco_str.split(',')]
         elif opcion == '4':
-            generos_str = input("Ingrese los nuevos géneros separados por coma: ")
-            pelicula_modificada["genres"] = [g.strip() for g in generos_str.split(',')]
+            generos_str = input(
+                "Ingrese los nuevos géneros separados por coma: ")
+            pelicula_modificada["genres"] = [g.strip()
+                                             for g in generos_str.split(',')]
         elif opcion == '5':
-            pelicula_modificada["extract"] = input("Ingrese la nueva sinopsis: ")
+            pelicula_modificada["extract"] = input(
+                "Ingrese la nueva sinopsis: ")
         elif opcion == '6':
             respuesta = requests.put(
                 f"http://localhost:8000/modificarPelicula/{id_pelicula}",
@@ -286,12 +297,13 @@ def borrar_pelicula():
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     titulo = input("Ingrese el título exacto de la película: ").strip()
-    año = validar_entero("Ingrese el año de estreno: ", "Error: Ingrese un año válido")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    año = validar_entero("Ingrese el año de estreno: ",
+                         "Error: Ingrese un año válido")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.delete(
         "http://localhost:8000/eliminarPelicula",
-        params = {"title": titulo, "year": año},
-        auth = auth
+        params={"title": titulo, "year": año},
+        auth=auth
     )
     procesar_respuesta(respuesta)
 
@@ -316,4 +328,3 @@ menu_general()
 
 
 # OJO: Agregar paginado
-

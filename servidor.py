@@ -61,7 +61,7 @@ def filmography(name: str, permisos: list[Permiso] = Depends(ss.obtener_permisos
 
 
 @app.get("/moviesByGender")
-def moviesByGender(permisos: list[Permiso] = Depends(ss.obtener_permisos) ,generos: list[str] = Query(...)) -> JSONResponse:
+def moviesByGender(permisos: list[Permiso] = Depends(ss.obtener_permisos), generos: list[str] = Query(...)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_peliculas_por_genero(generos, permisos)
 
@@ -113,3 +113,5 @@ def eliminarPelicula(title: str, year: int, permisos: list[Permiso] = Depends(ss
 def modificar_pelicula(id_pelicula: int, pelicula: Pelicula, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.EDITAR, Permiso.TODO])
     return ss.put_pelicula(pelicula, id_pelicula, permisos)
+
+#Agregar uno que devuelva las ultimas 10 peliculas para test
