@@ -18,7 +18,7 @@ app = FastAPI()
 #OJO: metodo que descargue el archivo en la ruta especificada
 #Que se ejecute siempre que no exista el archivo en el servidor
 
-VENTANA = timedelta(seconds=1)   # Ventana de tiempo
+VENTANA = timedelta(seconds = 1)   # Ventana de tiempo
 MAX_PETICIONES = 10             # Máximo de peticiones dentro de la ventana
 
 cubos_ip: Dict[str, Deque[datetime]] = {}
@@ -36,8 +36,8 @@ async def limitador(request: Request, call_next):
 
     if len(cubo) >= MAX_PETICIONES:
         raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="Demasiadas solicitudes: límite 10 req/s",
+            status_code = status.HTTP_429_TOO_MANY_REQUESTS,
+            detail = "Demasiadas solicitudes: límite 10 req/s",
         )
 
     cubo.append(ahora)
