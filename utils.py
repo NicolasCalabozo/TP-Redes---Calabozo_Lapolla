@@ -27,9 +27,12 @@ def validar_dato_input(mensaje_input: str, mensaje_error: str, tipo_dato: Callab
         except (ValueError, TypeError):
             print(mensaje_error)
             
-def verificar_permisos(permisos_usuario: list[Permiso], requeridos: list[Permiso]):
-    if not any(p in permisos_usuario for p in requeridos):
+def verificar_permisos(permisos_usuario: list[Permiso], permisos_requeridos: list[Permiso]):
+    if not any(permiso in permisos_usuario for permiso in permisos_requeridos):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tiene los permisos necesarios para realizar esta acción"
         )
+
+def cadena_mayusculas(cadena: str) -> str:
+    return cadena.upper().strip()

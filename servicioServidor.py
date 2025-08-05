@@ -5,7 +5,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Any
 from modelos import Pelicula
 import secrets
-from utils import verificar_permisos
+from utils import verificar_permisos, validar_entero
 from modelos import Permiso, Rol
 security = HTTPBasic()
 

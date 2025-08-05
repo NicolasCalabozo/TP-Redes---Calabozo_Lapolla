@@ -31,4 +31,4 @@ class PeliculaRequest(BaseModel):
 #OJO: Idea no implementada
 class RequestGenerica(BaseModel):
     peticion: dict
-    permisos: list[str]
+    permisos: list[Permiso]

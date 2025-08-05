@@ -103,7 +103,6 @@ def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
     permisos = ss.obtener_permisos(credentials)
     return {"permisos": permisos}
 
-
 @app.delete("/eliminarPelicula")
 def eliminarPelicula(title: str, year: int, permisos: list[Permiso], credentials: HTTPBasicCredentials = Depends(security)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])

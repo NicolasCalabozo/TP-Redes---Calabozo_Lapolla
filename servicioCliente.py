@@ -1,28 +1,28 @@
 import requests
 from fastapi import status
 from typing import Callable, Any
-import utils
+from utils import validar_opcion, validar_entero
 
 def crear_pelicula() -> dict[str, str | int | list[str]]:
     titulo = input("Ingrese el título de la película: ").strip()
-    año = utils.validar_entero('Ingrese el año de estreno: ',
+    año = validar_entero('Ingrese el año de estreno: ',
                          "Error: Ingrese un año válido")
     elenco = []
     opc = input('¿Desea ingresar el elenco? (S/N): ').upper().strip()
-    if utils.validar_opcion(opc):
+    if validar_opcion(opc):
         cadena_elenco = input(
             f"Ingrese el/los miembro/s del elenco, separados por coma: ")
         elenco = map(str.strip, cadena_elenco.split(sep=','))
     generos = []
     opc = input(
         "¿Desea ingresar los géneros de la película? (S/N): ").strip().upper()
-    if utils.validar_opcion(opc):
+    if validar_opcion(opc):
         generos_cadena = (
             input(f"Ingrese los generos de la película separados por coma: "))
         generos = map(str.strip, generos_cadena.split(','))
     sinopsis = ""
     opc = input("¿Desea ingresar una sinopsis? (S/N): ").strip().upper()
-    if utils.validar_opcion(opc):
+    if validar_opcion(opc):
         sinopsis = input("Ingrese la sinopsis: ")
     pelicula = {
         "title": titulo,
