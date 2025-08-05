@@ -5,29 +5,45 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import JSONResponse
 from modelos import PeliculaRequest
 import servicioServidor as ss
-from fastapi import FastAPI, Request
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+from fastapi import FastAPI, Request, HTTPException, status
+from collections import deque
+from datetime import datetime, timedelta
+from typing import Deque, Dict
 
 
 security = HTTPBasic()
 app = FastAPI()
-limiter = Limiter(key_func = get_remote_address) #toma la IP del cliente
-#Viendo y "Si la app tiene autenticación por usuario, 
-# podrías usar lambda req: req.user.username para limitar por usuario."
-#que capaz va con la lista de diccionarios de usuarios y permisos 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-#configura el limitador para funcionar por IP del cliente
-
-#Si limitamos las solicitudes de esta forma hay que agregar a los métodos "@limiter.limit("5/second")"
-# y las funciones necesitan el parametro request, de tipo request, porque si el endpoint no lo incluye
-#FastAPI no puede inyectarlo, y el "decorador" falla o no funciona como debería.
 
 
 #OJO: metodo que descargue el archivo en la ruta especificada
 #Que se ejecute siempre que no exista el archivo en el servidor
+
+VENTANA = timedelta(seconds=1)   # Ventana de tiempo
+MAX_PETICIONES = 10             # Máximo de peticiones dentro de la ventana
+
+cubos_ip: Dict[str, Deque[datetime]] = {}
+
+@app.middleware("http")
+async def limitador(request: Request, call_next):
+    ip = request.client.host
+    ahora = datetime.now()
+
+    cubo = cubos_ip.setdefault(ip, deque())
+
+    # Eliminar timestamps fuera de la ventana
+    while cubo and (ahora - cubo[0]) > VENTANA:
+        cubo.popleft()
+
+    if len(cubo) >= MAX_PETICIONES:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Demasiadas solicitudes: límite 10 req/s",
+        )
+
+    cubo.append(ahora)
+    respuesta = await call_next(request)
+    return respuesta
+
 
 @app.get("/allMovies")
 def allMovies() -> JSONResponse:
