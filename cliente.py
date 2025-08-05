@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula
-from utils import validar_entero
+from utils import validar_entero, cadena_mayusculas
 from modelos import Permiso
 
 usuario_actual = None
@@ -136,8 +136,8 @@ def buscar_por_genero() -> None:
     while (True):
         i += 1
         generos.append(input(f'Ingrese un género ({i}):'))
-        opcion = input(
-            '¿Desea seguir ingresando géneros? (S/N): ').strip().upper()
+        opcion = cadena_mayusculas(input(
+            '¿Desea seguir ingresando géneros? (S/N): '))
         if opcion == 'N':
             break
     respuesta = requests.get(

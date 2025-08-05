@@ -5,7 +5,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Any
 from modelos import Pelicula
 import secrets
-from utils import verificar_permisos, validar_entero
+from utils import verificar_permisos, validar_entero, cadena_mayusculas
 from modelos import Permiso, Rol
 security = HTTPBasic()
 
@@ -78,7 +78,7 @@ def get_peliculas_por_titulo(filtro_titulo: str, permisos: list[Permiso]) -> JSO
     peliculas = respuesta["datos"]
     peliculas_filtradas = []
     for pelicula in peliculas:
-        if filtro_titulo.upper().strip() in pelicula['title'].upper().strip():
+        if cadena_mayusculas(filtro_titulo) in cadena_mayusculas(pelicula['title']):
             peliculas_filtradas.append(pelicula)
 
     cadena_respuesta = f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
@@ -104,7 +104,7 @@ def get_filmografia(filtro_nombre: str, permisos: list[Permiso]) -> JSONResponse
     filmografia = []
     for pelicula in peliculas:
         for elenco in pelicula['cast']:
-            if filtro_nombre.upper().strip() in elenco.upper().strip():
+            if cadena_mayusculas(filtro_nombre) in cadena_mayusculas(elenco):
                 filmografia.append(pelicula)
 
     cadena_respuesta = f"\nCantidad de resultados: {len(filmografia)}\n"
@@ -129,7 +129,7 @@ def get_peliculas_por_genero(generos: list[str], permisos: list[Permiso]) -> JSO
     peliculas = respuesta["datos"]
     peliculas_filtradas = [
         pelicula for pelicula in peliculas
-        if any(genero.strip().upper() in map(str.upper, pelicula['genres']) for genero in generos)
+        if any(cadena_mayusculas(genero) in map(str.upper, pelicula['genres']) for genero in generos)
     ]
 
     cadena_respuesta = f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
@@ -153,7 +153,7 @@ def get_sinopsis(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
 
     peliculas = respuesta["datos"]
     for pelicula in peliculas:
-        if pelicula['title'].upper().strip() == filtro_titulo.upper().strip():
+        if cadena_mayusculas(pelicula['title']) == cadena_mayusculas(filtro_titulo):
             if pelicula.get('extract'):
                 cadena_respuesta = f"\nSinopsis: \n{pelicula['extract']}\n"
             else:
@@ -209,8 +209,8 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: 
 
     peliculas = respuesta["datos"]
     filmografia = []
-    actor = filtro_actor.upper().strip()
-    genero = filtro_genero.upper().strip()
+    actor = cadena_mayusculas(filtro_actor)
+    genero = cadena_mayusculas(filtro_genero)
 
     for pelicula in peliculas:
         elenco = map(str.upper, pelicula.get('cast', []))
@@ -240,7 +240,7 @@ def get_pelicula_id(titulo: str, año: int, permisos: list[Permiso]):
     id = None
     pelicula_encontrada = None
     for i, pelicula in enumerate(peliculas):
-        if pelicula['title'].upper() == titulo.upper().strip() and pelicula['year'] == año:
+        if cadena_mayusculas(pelicula['title']) == cadena_mayusculas(titulo) and pelicula['year'] == año:
             id = i
             pelicula_encontrada = pelicula
             break
@@ -346,9 +346,9 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[P
             content={"error": respuesta.get("error")}
         )
     peliculas = respuesta["datos"]
-    titulo = titulo.strip().upper()
+    titulo = cadena_mayusculas(titulo)
     nueva_lista = [p for p in peliculas if not (
-        p["title"].strip().upper() == titulo and p.get("year") == año)]
+        cadena_mayusculas(p["title"]) == titulo and p.get("year") == año)]
     if len(nueva_lista) == len(peliculas):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
