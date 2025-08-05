@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Deque, Dict
 from utils import verificar_permisos
 import servicioServidor as ss
+from modelos import Pelicula
 
 security = HTTPBasic()
 app = FastAPI()
@@ -107,3 +108,7 @@ def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
 def eliminarPelicula(title: str, year: int, permisos: list[Permiso], credentials: HTTPBasicCredentials = Depends(security)) -> JSONResponse:
     verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     return ss.eliminar_pelicula_por_titulo_y_año(title, year, permisos)
+
+@app.put("/modificarPelicula/{id_pelicula}")
+def modificar_pelicula(id_pelicula: int, pelicula: Pelicula, permisos: list[Permiso] = Depends(ss.obtener_permisos)) -> JSONResponse:
+    return ss.put_pelicula(pelicula, id_pelicula, permisos)

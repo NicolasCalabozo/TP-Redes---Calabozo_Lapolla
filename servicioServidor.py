@@ -368,3 +368,31 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[P
         content={
             "contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
     )
+def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.EDITAR, Permiso.TODO])
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(
+            status_code=respuesta["status"],
+            content={"error": respuesta.get("error")}
+        )
+    peliculas = respuesta["datos"]
+    if id_pelicula < 0 or id_pelicula >= len(peliculas):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"error": f"No se encontró una película con el ID {id_pelicula}"}
+        )
+    peliculas[id_pelicula] = pelicula_actualizada.model_dump()
+    try:
+        with open('movies.json', 'w', encoding='utf-8') as archivo:
+            json.dump(peliculas, archivo, ensure_ascii=False, indent=4)
+    except Exception as e:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": f"No se pudo modificar la película: {str(e)}"}
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"contenido": f"Película '{pelicula_actualizada.title}' modificada con éxito"}
+    )
+
