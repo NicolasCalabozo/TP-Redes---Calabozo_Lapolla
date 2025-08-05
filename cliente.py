@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
-import servicioCliente as sc
+from servicioCliente import procesar_respuesta, crear_pelicula
+from utils import validar_entero
 from modelos import Permiso
 
 usuario_actual = None
@@ -112,21 +113,21 @@ def menu_consultas():
 
 def consultar_todas():
     respuesta = requests.get("http://localhost:8000/allMovies")
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_por_titulo() -> None:
     titulo = input("Ingrese un título: ")
     respuesta = requests.get(
         "http://localhost:8000/filteredMovies", params={"title": titulo})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_filmografia() -> None:
     actor = input("Ingrese un actor: ")
     respuesta = requests.get(
         "http://localhost:8000/filmography", params={"name": actor})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_por_genero() -> None:
@@ -141,14 +142,14 @@ def buscar_por_genero() -> None:
             break
     respuesta = requests.get(
         "http://localhost:8000/moviesByGender", params={"generos": generos})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_sinopsis() -> None:
     titulo = input("Ingrese un título: ")
     respuesta = requests.get(
         "http://localhost:8000/movieSinopsis", params={"title": titulo})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_peliculas_año() -> None:
@@ -156,11 +157,11 @@ def buscar_peliculas_año() -> None:
     Requiere: Input de un año
     Devuelve: Lista de películas de dicho año
     '''
-    año = sc.validar_entero('Ingrese el año de estreno: ',
+    año = validar_entero('Ingrese el año de estreno: ',
                             "Error: Ingrese un año válido")
     respuesta = requests.get(
         "http://localhost:8000/moviesByYear", params={"year": año})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def buscar_filmografia_genero() -> None:
@@ -168,7 +169,7 @@ def buscar_filmografia_genero() -> None:
     genero = input('Ingrese un género: ')
     respuesta = requests.get(
         "http://localhost:8000/filmographyByGender", params={"name": actor, "gender": genero})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def agregar_pelicula():
@@ -179,10 +180,10 @@ def agregar_pelicula():
     if not (Permiso.CREAR in permisos_usuario or Permiso.TODO in permisos_usuario):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    pelicula = sc.crear_pelicula()
+    pelicula = crear_pelicula()
     respuesta = requests.post("http://localhost:8000/agregarPelicula",
                               json={"pelicula": pelicula, "permisos": permisos_usuario})
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def modificar_pelicula():
@@ -198,14 +199,14 @@ def borrar_pelicula():
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     titulo = input("Ingrese el título exacto de la película: ").strip()
-    año = sc.validar_entero("Ingrese el año de estreno: ", "Error: Ingrese un año válido")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    año = validar_entero("Ingrese el año de estreno: ", "Error: Ingrese un año válido")
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
     respuesta = requests.delete(
         "http://localhost:8000/eliminarPelicula",
-        params = {"title": titulo, "year": año},
+        params = {"title": titulo, "year": año, "permisos": permisos_usuario},
         auth = auth
     )
-    sc.procesar_respuesta(respuesta)
+    procesar_respuesta(respuesta)
 
 
 def verificar_permisos():
@@ -228,8 +229,4 @@ menu_general()
 
 
 # OJO: Agregar paginado
-# i=0 i=5 pagina 1 <- la pagina donde estamos
-# i=5 i=10 pagina 2
-# ...
-# round(len()/5) <- numero de paginas
-# round(len()/5)  - i=0+4, i=5+4, elemento[i]
+

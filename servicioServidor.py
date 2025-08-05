@@ -5,6 +5,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Any
 from modelos import Pelicula
 import secrets
+from utils import verificar_permisos
 from modelos import Permiso, Rol
 security = HTTPBasic()
 
@@ -34,7 +35,7 @@ usuarios = [{
 
 def get_peliculas() -> dict:
     try:
-        with open('movies.json', 'r', encoding = 'utf-8') as json_file:
+        with open('movies.json', 'r', encoding='utf-8') as json_file:
             datos = json.load(json_file)
         return {"status": status.HTTP_200_OK, "datos": datos}
     except FileNotFoundError:
@@ -43,7 +44,8 @@ def get_peliculas() -> dict:
         return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": f"Error inesperado: {str(e)}"}
 
 
-def get_todos_titulos() -> JSONResponse:
+def get_todos_titulos(permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -64,9 +66,9 @@ def get_todos_titulos() -> JSONResponse:
 # OJO: Crear funcion para formatear peliculas
 
 
-def get_peliculas_por_titulo(filtro_titulo: str) -> JSONResponse:
+def get_peliculas_por_titulo(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
-
     if respuesta.get("status") != 200:
         return JSONResponse(
             status_code=respuesta["status"],
@@ -88,7 +90,8 @@ def get_peliculas_por_titulo(filtro_titulo: str) -> JSONResponse:
     )
 
 
-def get_filmografia(filtro_nombre: str) -> JSONResponse:
+def get_filmografia(filtro_nombre: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -113,7 +116,8 @@ def get_filmografia(filtro_nombre: str) -> JSONResponse:
     )
 
 
-def get_peliculas_por_genero(generos: list[str]) -> JSONResponse:
+def get_peliculas_por_genero(generos: list[str], permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -137,7 +141,8 @@ def get_peliculas_por_genero(generos: list[str]) -> JSONResponse:
     )
 
 
-def get_sinopsis(filtro_titulo: str) -> JSONResponse:
+def get_sinopsis(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -166,7 +171,8 @@ def get_sinopsis(filtro_titulo: str) -> JSONResponse:
     )
 
 
-def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
+def get_peliculas_por_año(filtro_año: int, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -188,10 +194,11 @@ def get_peliculas_por_año(filtro_año: int) -> JSONResponse:
     )
 
 
-def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONResponse:
+def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: list[Permiso]) -> JSONResponse:
     '''
     A partir de un género y un actor devuelve la filmografía que cumple con lo especificado
     '''
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -221,7 +228,8 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str) -> JSONRes
     )
 
 
-def get_pelicula_id(titulo: str, año: int):
+def get_pelicula_id(titulo: str, año: int, permisos: list[Permiso]):
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -263,16 +271,11 @@ def formatear_titulos(lista_peliculas: list[dict[str, str]]) -> str:
     return cadena_formateada
 
 
-def post_pelicula(pelicula: Pelicula, permisos: list[str]) -> JSONResponse:
+def post_pelicula(pelicula: Pelicula, permisos: list[Permiso]) -> JSONResponse:
     '''
     Método que permite persistir una película en el archivo 'movies.json'
     '''
-    if Permiso.CREAR not in permisos and Permiso.TODO not in permisos:
-        return JSONResponse(
-            status_code=status.HTTP_403_FORBIDDEN,
-            content={
-                "error": "No tiene los permisos necesarios para realizar esta acción"}
-        )
+    verificar_permisos(permisos, [Permiso.CREAR, Permiso.TODO])
 
     respuesta = get_peliculas()
 
@@ -305,18 +308,17 @@ def put_pelicula(pelicula: Pelicula, id: int, permisos: list[str]):
     pass
 
 
-def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security),) -> list[str]:
+def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security)) -> list[Permiso]:
     '''
     Método que permite la obtención de los permisos del usuario según sus credenciales de login
     '''
-    # Buscar el usuario en la base de datos, extraer la contraseña, comparar
     usuario = buscar_usuario(credenciales.username)
     if (not usuario):
         raise HTTPException(
-            status_code = status.HTTP_401_UNAUTHORIZED,
-            detail = "Usuario no encontrado"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado"
         )
-        
+
     contraseña_correcta = secrets.compare_digest(
         credenciales.password,  usuario['password'])
 
@@ -335,40 +337,34 @@ def buscar_usuario(username: str) -> dict[str, Any] | None:
     return None
 
 
-def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[str]) -> JSONResponse:
-    if Permiso.ELIMINAR not in permisos and Permiso.TODO not in permisos:
-        return JSONResponse(
-            status_code = status.HTTP_403_FORBIDDEN,
-            content = {"error": "No tiene los permisos necesarios para realizar esta acción"}
-        )
+def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
-            status_code = respuesta["status"],
-            content = {"error": respuesta.get("error")}
+            status_code=respuesta["status"],
+            content={"error": respuesta.get("error")}
         )
     peliculas = respuesta["datos"]
     titulo = titulo.strip().upper()
-    año = int(año)
     nueva_lista = [p for p in peliculas if not (
         p["title"].strip().upper() == titulo and p.get("year") == año)]
     if len(nueva_lista) == len(peliculas):
         return JSONResponse(
-            status_code = status.HTTP_404_NOT_FOUND,
-            content = {"error": f"No se encontró la película '{titulo}' del año {año}"}
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "error": f"No se encontró la película '{titulo}' del año {año}"}
         )
     try:
         with open("movies.json", "w", encoding="utf-8") as f:
             json.dump(nueva_lista, f, ensure_ascii=False, indent=4)
     except Exception as e:
         return JSONResponse(
-            status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content = {"error": f"No se pudo eliminar la película: {str(e)}"}
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": f"No se pudo eliminar la película: {str(e)}"}
         )
     return JSONResponse(
-        status_code = status.HTTP_200_OK,
-        content = {"contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
+        status_code=status.HTTP_200_OK,
+        content={
+            "contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
     )
-    
-    def test_permisos():
-        

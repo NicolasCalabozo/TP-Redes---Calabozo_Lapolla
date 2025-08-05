@@ -1,30 +1,15 @@
-from fastapi import FastAPI
-from fastapi import Query
-from fastapi import Depends
+from fastapi import FastAPI, Request, HTTPException , Query, Depends, status
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import JSONResponse
-from modelos import PeliculaRequest
+from modelos import PeliculaRequest, Permiso
+from collections import deque
+from datetime import datetime, timedelta
+from typing import Deque, Dict
+from utils import verificar_permisos
 import servicioServidor as ss
-from fastapi import FastAPI, Request
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-
 
 security = HTTPBasic()
 app = FastAPI()
-limiter = Limiter(key_func = get_remote_address) #toma la IP del cliente
-#Viendo y "Si la app tiene autenticación por usuario, 
-# podrías usar lambda req: req.user.username para limitar por usuario."
-#que capaz va con la lista de diccionarios de usuarios y permisos 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-#configura el limitador para funcionar por IP del cliente
-
-#Si limitamos las solicitudes de esta forma hay que agregar a los métodos "@limiter.limit("5/second")"
-# y las funciones necesitan el parametro request, de tipo request, porque si el endpoint no lo incluye
-#FastAPI no puede inyectarlo, y el "decorador" falla o no funciona como debería.
-
 
 #OJO: metodo que descargue el archivo en la ruta especificada
 #Que se ejecute siempre que no exista el archivo en el servidor
@@ -36,7 +21,7 @@ cubos_ip: Dict[str, Deque[datetime]] = {}
 
 @app.middleware("http")
 async def limitador(request: Request, call_next):
-    ip = request.client.host
+    ip = request.client.host # type: ignore
     ahora = datetime.now()
 
     cubo = cubos_ip.setdefault(ip, deque())
@@ -57,57 +42,69 @@ async def limitador(request: Request, call_next):
 
 
 @app.get("/allMovies")
-def allMovies() -> JSONResponse:
-    return ss.get_todos_titulos()
+def allMovies(permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_todos_titulos(permisos)
 
 
 @app.get("/filteredMovies")
-def filteredMovies(title: str) -> JSONResponse:
-    return ss.get_peliculas_por_titulo(title)
+def filteredMovies(title: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_peliculas_por_titulo(title, permisos)
 
 
 @app.get("/filmography")
-def filmography(name: str) -> JSONResponse:
-    return ss.get_filmografia(name)
+def filmography(name: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_filmografia(name, permisos)
 
 
 @app.get("/moviesByGender")
-def moviesByGender(generos: list[str] = Query(...)) -> JSONResponse:
-    return ss.get_peliculas_por_genero(generos)
+def moviesByGender(permisos: list[Permiso],generos: list[str] = Query(...)) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_peliculas_por_genero(generos, permisos)
 
 
 @app.get("/movieSinopsis")
-def sinopsis(title: str) -> JSONResponse:
-    return ss.get_sinopsis(title)
+def sinopsis(title: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_sinopsis(title, permisos)
 
 
 @app.get("/moviesByYear")
-def moviesByYear(year: int) -> JSONResponse:
-    return ss.get_peliculas_por_año(year)
+def moviesByYear(year: int, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_peliculas_por_año(year, permisos)
 
 
 @app.get("/filmographyByGender")
-def filmographyByGender(name: str, gender: str) -> JSONResponse:
-    return ss.get_filmografia_por_genero(name, gender)
+def filmographyByGender(name: str, gender: str, permisos: list[Permiso]) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_filmografia_por_genero(name, gender, permisos)
 
 
 @app.post("/agregarPelicula")
 def agregarPelicula(peticion: PeliculaRequest) -> JSONResponse:
+    '''Endpoint de creación de películas'''
+    verificar_permisos(peticion.permisos, [Permiso.CREAR, Permiso.TODO])
     return ss.post_pelicula(peticion.pelicula, peticion.permisos)
 
 
 @app.get("/obtenerPeliculaPorId")
-def obtenerPelicula(titulo: str, año: int):
-    return ss.get_pelicula_id(titulo, año)
+def obtenerPelicula(titulo: str, año: int, permisos: list[Permiso]):
+    '''Endpoint para obtener una pelicula, con su ID, por año y titulo'''
+    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    return ss.get_pelicula_id(titulo, año, permisos)
 
 
 @app.post("/verificarAcceso")
 def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
+    '''Endpoint para la obtencion de permisos del usuario'''
     permisos = ss.obtener_permisos(credentials)
     return {"permisos": permisos}
 
 
 @app.delete("/eliminarPelicula")
-def eliminarPelicula(title: str, year: int, credentials: HTTPBasicCredentials = Depends(security)) -> JSONResponse:
-    permisos = ss.obtener_permisos(credentials)
+def eliminarPelicula(title: str, year: int, permisos: list[Permiso], credentials: HTTPBasicCredentials = Depends(security)) -> JSONResponse:
+    verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     return ss.eliminar_pelicula_por_titulo_y_año(title, year, permisos)

@@ -26,7 +26,7 @@ class Pelicula(BaseModel):
 
 class PeliculaRequest(BaseModel):
     pelicula: Pelicula
-    permisos: list[str]
+    permisos: list[Permiso]
 
 #OJO: Idea no implementada
 class RequestGenerica(BaseModel):
