@@ -117,28 +117,27 @@ def get_filmografia(filtro_nombre: str, permisos: list[Permiso]) -> JSONResponse
 
 
 def get_peliculas_por_genero(generos: list[str], permisos: list[Permiso]) -> JSONResponse:
+    # Verificación de permisos, no se toca
     verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    
+    # Obtención de películas
     respuesta = get_peliculas()
-
     if respuesta.get("status") != 200:
         return JSONResponse(
             status_code=respuesta["status"],
-            content={"error": respuesta.get("error")}
-        )
-
+            content={"error": respuesta.get("error")})
     peliculas = respuesta["datos"]
+    generos_busqueda = set(generos)
     peliculas_filtradas = [
-        pelicula for pelicula in peliculas
-        if any(cadena_mayusculas(genero) in map(str.upper, pelicula['genres']) for genero in generos)
-    ]
-
-    cadena_respuesta = f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
-    cadena_respuesta += formatear_titulos(peliculas_filtradas)
-
+        pelicula for pelicula in peliculas 
+        if generos_busqueda.issubset(set(pelicula.get('genres', [])))]
+    if not peliculas_filtradas:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"mensaje": "No se encontraron películas con esos géneros exactos."})
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
-    )
+        content={"peliculas": peliculas_filtradas})
 
 
 def get_sinopsis(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
