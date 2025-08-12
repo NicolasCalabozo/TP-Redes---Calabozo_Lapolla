@@ -2,41 +2,50 @@ import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula
 from utils import validar_entero, cadena_mayusculas
-from modelos import Permiso
+from modelos import Permiso, Rol
 
 usuario_actual = None
 contraseña_actual = None
 permisos_usuario = []
+usuario_rol = None
 sesion_iniciada = False
 
 BASE_URL = "http://192.168.1.70:8000"
 
 def menu_general():
-    global sesion_iniciada
+    global sesion_iniciada, usuario_actual, usuario_rol
     while not sesion_iniciada:
         verificar_permisos()
-
-    while True:
-        print("--           General             --")
-        # Permiso VER, TODO
-        print("-    1.  Menú de consultas        -")
-        # Permiso CREAR, MODIFICAR,ELIMINAR, TODO
-        print("-    2.  Menú de ABM              -")
-        print("-    0. Salir                     -")
-        print("-----------------------------------")
-        opcion = input("Ingrese una opción: ")
-        if opcion == '1':
+    if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
             menu_consultas()
-        elif opcion == '2':
-            menu_abm()
-        elif opcion == '0':
-            break
-        else:
-            print("Opción no válida. Reintente.")
-            continue
+    
+    if usuario_rol in [Rol.ADMIN, Rol.EDITOR]:
+        while True:
+            print("--           General             --")
+            # Permiso VER, TODO
+            print("-    1.  Menú de consultas        -")
+            # Permiso CREAR, MODIFICAR,ELIMINAR, TODO
+            print("-    2.  Menú de ABM              -")
+            print("-    0. Salir                     -")
+            print("-----------------------------------")
+            opcion = input("Ingrese una opción: ")
+            if opcion == '1':
+                menu_consultas()
+            elif opcion == '2':
+                menu_abm()
+            elif opcion == '0':
+                break
+            else:
+                print("Opción no válida. Reintente.")
+                continue
 
 
 def menu_abm():
+    global usuario_rol
+    if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
+        print("No posee los permisos suficientes para realizar esta acción")
+        return 
+    
     while True:
         # ABM
         print("--                 Menu ABM                      --")
@@ -209,7 +218,7 @@ def agregar_pelicula():
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     pelicula = crear_pelicula()
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) #type: ignore
     
     # CORRECCIÓN: Se envía el diccionario de la película directamente, no un objeto anidado
     respuesta = requests.post(f"{BASE_URL}/agregarPelicula",
@@ -326,7 +335,7 @@ def borrar_pelicula():
         #sesion_iniciada = True
         #print("Acceso concedido, bienvenido.")
 def verificar_permisos():
-    global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada
+    global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada, usuario_rol
     usuario = input("Ingrese su usuario: ").strip()
     contraseña = input("Ingrese su contraseña: ").strip()
     auth = HTTPBasicAuth(usuario, contraseña)
@@ -340,6 +349,7 @@ def verificar_permisos():
         else:
             usuario_actual = usuario
             contraseña_actual = contraseña # CORRECCIÓN: Guardar la contraseña para llamadas posteriores
+            usuario_rol = r.json()['rol']
             permisos_usuario = r.json()['permisos']
             sesion_iniciada = True
             print("Acceso concedido, bienvenido.")
