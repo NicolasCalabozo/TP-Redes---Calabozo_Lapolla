@@ -40,7 +40,7 @@ def modificar_pelicula():
 
 def procesar_respuesta(respuesta: requests.Response) -> None:
     datos = respuesta.json()
-    if respuesta.status_code == requests.codes.ok:
+    if respuesta.status_code != requests.codes.ok:
         print(
             f"Error HTTP {respuesta.status_code}: {datos.get('error', 'Error desconocido')}")
         return

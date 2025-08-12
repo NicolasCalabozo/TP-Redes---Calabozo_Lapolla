@@ -7,7 +7,7 @@ from modelos import Permiso, Rol
 usuario_actual = None
 contraseña_actual = None
 permisos_usuario = []
-usuario_rol = None
+usuario_rol = Rol.ADMIN
 sesion_iniciada = False
 
 BASE_URL = "http://192.168.1.70:8000"
@@ -122,6 +122,8 @@ def menu_consultas():
 
 def consultar_todas():
     global permisos_usuario, usuario_actual, contraseña_actual
+    print(f"Los permisos: {permisos_usuario}")
+    print(f"Funcion: {verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO])}")
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
@@ -332,13 +334,13 @@ def verificar_permisos():
     contraseña = input("Ingrese su contraseña: ").strip()
     # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario, contraseña)
-    r = requests.post(f"http://{BASE_URL}/verificarAcceso", auth=auth)
+    r = requests.post(f"{BASE_URL}/verificarAcceso", auth=auth)
     if r.status_code != 200:
         print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
     else:
         global permisos_usuario, sesion_iniciada, usuario_actual
         usuario_actual = usuario
-        usuario_rol = r.json()['rol']
+        #usuario_rol = r.json()['rol']
         permisos_usuario = r.json()['permisos']
         sesion_iniciada = True
         print("Acceso concedido, bienvenido.")
