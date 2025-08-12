@@ -80,7 +80,7 @@ def get_peliculas_por_titulo(titulo: str, permisos: list[Permiso], pagina: int =
     if respuesta.get("status") != 200:
         return JSONResponse(status_code=respuesta["status"], content={"error": respuesta.get("error")})
 
-    #OJO: Mejora filtrar por concidencias cercanas
+    # OJO: Mejora filtrar por concidencias cercanas
     peliculas_filtradas = [
         pelicula for pelicula in respuesta["datos"]
         if cadena_mayusculas(titulo) in cadena_mayusculas(pelicula['title'])

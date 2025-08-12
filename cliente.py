@@ -66,11 +66,12 @@ def menu_abm():
             eliminar_pelicula()
         elif opcion == '4':
             pass
-            #OJO: Agregar un consultar_ultimas_peliculas()
+            # OJO: Agregar un consultar_ultimas_peliculas()
         elif opcion == '0':
             return
         else:
             print("Opción no válida. Reintente.")
+
 
 def menu_consultas():
     # Todas estas acciones son accesibles por todos los roles que tengan el permiso 'ver'
@@ -118,6 +119,7 @@ def menu_consultas():
 
 # Métodos GET
 
+
 def consultar_todas():
     global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
@@ -139,6 +141,7 @@ def buscar_por_titulo() -> None:
         f"{BASE_URL}/filteredMovies", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
+
 def buscar_filmografia() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
@@ -149,6 +152,7 @@ def buscar_filmografia() -> None:
     respuesta = requests.get(
         f"{BASE_URL}/filmography", params={"name": actor}, auth=auth)
     procesar_respuesta(respuesta)
+
 
 def buscar_por_genero() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
@@ -339,7 +343,6 @@ def verificar_permisos():
         sesion_iniciada = True
         print("Acceso concedido, bienvenido.")
 
-#mostrar_peliculas_paginadas("peliculasPorAño", {"titulo": "pepe", año: 2010})
 
 def mostrar_peliculas_paginadas(endpoint: str, params: dict):
     global usuario_actual, contraseña_actual
