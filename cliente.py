@@ -320,42 +320,22 @@ def borrar_pelicula():
     procesar_respuesta(respuesta)
 
 
-#def verificar_permisos():
- #   usuario = input("Ingrese su usuario: ").strip()
-  #  contraseña = input("Ingrese su contraseña: ").strip()
-    # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
-   # auth = HTTPBasicAuth(usuario, contraseña)
-    #r = requests.post(f"http://{BASE_URL}/verificarAcceso", auth=auth)
-    #if r.status_code != 200:
-     #   print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
-    #else:
-     #   global permisos_usuario, sesion_iniciada, usuario_actual
-      #  usuario_actual = usuario
-       # permisos_usuario = r.json()['permisos']
-        #sesion_iniciada = True
-        #print("Acceso concedido, bienvenido.")
 def verificar_permisos():
     global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada, usuario_rol
     usuario = input("Ingrese su usuario: ").strip()
     contraseña = input("Ingrese su contraseña: ").strip()
+    # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario, contraseña)
-    
-    try:
-        r = requests.post(f"{BASE_URL}/verificarAcceso", auth=auth)
-        
-        if r.status_code != 200:
-            # CORRECCIÓN: Usar 'detail' para obtener el mensaje de error de FastAPI
-            print(f"Acceso denegado: {r.json().get('detail')}")
-        else:
-            usuario_actual = usuario
-            contraseña_actual = contraseña # CORRECCIÓN: Guardar la contraseña para llamadas posteriores
-            usuario_rol = r.json()['rol']
-            permisos_usuario = r.json()['permisos']
-            sesion_iniciada = True
-            print("Acceso concedido, bienvenido.")
-    except requests.exceptions.ConnectionError:
-        print(f"Error de conexión: No se pudo conectar al servidor en {BASE_URL}")
-
+    r = requests.post(f"http://{BASE_URL}/verificarAcceso", auth=auth)
+    if r.status_code != 200:
+        print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
+    else:
+        global permisos_usuario, sesion_iniciada, usuario_actual
+        usuario_actual = usuario
+        usuario_rol = r.json()['rol']
+        permisos_usuario = r.json()['permisos']
+        sesion_iniciada = True
+        print("Acceso concedido, bienvenido.")
 menu_general()
 
 
