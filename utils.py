@@ -68,8 +68,9 @@ def verificar_permisos_servidor(permisos_usuario: list[Permiso], permisos_requer
             detail="No tiene los permisos necesarios para realizar esta acción"
         )
 
-def verificar_permisos_cliente(permisos_usuario: list[Permiso], permisos_requeridos: list[Permiso]) -> bool:
-    return any(p in permisos_usuario for p in permisos_requeridos)
+def verificar_permisos_cliente(permisos_usuario: list[str], permisos_requeridos: list[Permiso]) -> bool:
+    permisos_usuario_enum = [Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
+    return any(p in permisos_requeridos for p in permisos_usuario_enum)
 
 def cadena_mayusculas(cadena: str) -> str:
     '''Devuelve una cadena formateada en mayúsculas y sin espacios en blanco al comienzo o al final,
