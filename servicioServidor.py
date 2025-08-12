@@ -1,12 +1,15 @@
 import json
+import os
+import requests
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from typing import Any
 from modelos import Pelicula
 import secrets
-from utils import verificar_permisos, validar_entero, cadena_mayusculas
+from utils import verificar_permisos_servidor, cadena_mayusculas
 from modelos import Permiso, Rol
+
 security = HTTPBasic()
 
 usuarios = [{
@@ -32,6 +35,8 @@ usuarios = [{
 }
 ]
 
+RESULTADOS_POR_PAGINA = 10
+
 
 def get_peliculas() -> dict:
     try:
@@ -44,105 +49,108 @@ def get_peliculas() -> dict:
         return {"status": status.HTTP_500_INTERNAL_SERVER_ERROR, "error": f"Error inesperado: {str(e)}"}
 
 
-def get_todos_titulos(permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+def get_todos_titulos(permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
-        return JSONResponse(
-            status_code=respuesta["status"],
-            content={"error": respuesta["error"]}
-        )
+        return JSONResponse(status_code=respuesta["status"], content={"error": respuesta["error"]})
 
     peliculas = respuesta["datos"]
-    cadena_respuesta = "\nListado de todas las películas:\n"
-    cadena_respuesta += formatear_titulos(peliculas)
+    paginado = paginar_resultados(peliculas, pagina)
+
+    cadena_respuesta = formatear_titulos(paginado["resultados"])
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
     )
+
 
 # OJO: Devolver los datos de la pelicula formateados
 # OJO: Crear funcion para formatear peliculas
 
-
-def get_peliculas_por_titulo(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+def get_peliculas_por_titulo(titulo: str, permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
-        return JSONResponse(
-            status_code=respuesta["status"],
-            content={"error": respuesta.get("error")}
-        )
+        return JSONResponse(status_code=respuesta["status"], content={"error": respuesta.get("error")})
 
-    peliculas = respuesta["datos"]
-    peliculas_filtradas = []
-    for pelicula in peliculas:
-        if cadena_mayusculas(filtro_titulo) in cadena_mayusculas(pelicula['title']):
-            peliculas_filtradas.append(pelicula)
-
-    cadena_respuesta = f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
-    cadena_respuesta += formatear_titulos(peliculas_filtradas)
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
-    )
-
-
-def get_filmografia(filtro_nombre: str, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
-    respuesta = get_peliculas()
-
-    if respuesta.get("status") != 200:
-        return JSONResponse(
-            status_code=respuesta["status"],
-            content={"error": respuesta.get("error")}
-        )
-
-    peliculas = respuesta["datos"]
-    filmografia = []
-    for pelicula in peliculas:
-        for elenco in pelicula['cast']:
-            if cadena_mayusculas(filtro_nombre) in cadena_mayusculas(elenco):
-                filmografia.append(pelicula)
-
-    cadena_respuesta = f"\nCantidad de resultados: {len(filmografia)}\n"
-    cadena_respuesta += formatear_titulos(filmografia)
-
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
-    )
-
-
-def get_peliculas_por_genero(generos: list[str], permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
-    respuesta = get_peliculas()
-
-    if respuesta.get("status") != 200:
-        return JSONResponse(
-            status_code=respuesta["status"],
-            content={"error": respuesta.get("error")}
-        )
-
-    peliculas = respuesta["datos"]
+    #OJO: Mejora filtrar por concidencias cercanas
     peliculas_filtradas = [
-        pelicula for pelicula in peliculas
-        if any(cadena_mayusculas(genero) in map(str.upper, pelicula['genres']) for genero in generos)
+        pelicula for pelicula in respuesta["datos"]
+        if cadena_mayusculas(titulo) in cadena_mayusculas(pelicula['title'])
     ]
-
-    cadena_respuesta = f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
-    cadena_respuesta += formatear_titulos(peliculas_filtradas)
+    paginado = paginar_resultados(peliculas_filtradas, pagina)
+    cadena_respuesta = "".join(formatear_datos_pelicula(p)
+                               for p in paginado["resultados"])
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
+    )
+
+
+def get_filmografia(nombre: str, permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(status_code=respuesta["status"], content={"error": respuesta.get("error")})
+
+    peliculas_filtradas = [
+        pelicula for pelicula in respuesta["datos"]
+        if cadena_mayusculas(nombre) in cadena_mayusculas(pelicula['director']) or
+        cadena_mayusculas(nombre) in cadena_mayusculas(pelicula['cast'])
+    ]
+    paginado = paginar_resultados(peliculas_filtradas, pagina)
+    cadena_respuesta = formatear_titulos(paginado["resultados"])
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
+    )
+
+
+def get_peliculas_por_genero(generos: list[str], permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(status_code=respuesta["status"], content={"error": respuesta.get("error")})
+
+    peliculas_filtradas = [
+        pelicula for pelicula in respuesta["datos"]
+        if all(genero in pelicula['genres'] for genero in generos)
+    ]
+    paginado = paginar_resultados(peliculas_filtradas, pagina)
+    cadena_respuesta = formatear_titulos(paginado["resultados"])
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
     )
 
 
 def get_sinopsis(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -171,34 +179,36 @@ def get_sinopsis(filtro_titulo: str, permisos: list[Permiso]) -> JSONResponse:
     )
 
 
-def get_peliculas_por_año(filtro_año: int, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+def get_peliculas_por_año(year: int, permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
-
     if respuesta.get("status") != 200:
-        return JSONResponse(
-            status_code=respuesta["status"],
-            content={"error": respuesta.get("error")}
-        )
+        return JSONResponse(status_code=respuesta["status"], content={"error": respuesta.get("error")})
 
-    peliculas = respuesta["datos"]
-    peliculas_filtradas = [p for p in peliculas if p.get('year') == filtro_año]
-
-    cadena_respuesta = f'\nPelículas del año {filtro_año}:\n'
-    cadena_respuesta += f"\nCantidad de resultados: {len(peliculas_filtradas)}\n"
-    cadena_respuesta += formatear_titulos(peliculas_filtradas)
+    peliculas_filtradas = [
+        pelicula for pelicula in respuesta["datos"]
+        if pelicula['year'] == year
+    ]
+    paginado = paginar_resultados(peliculas_filtradas, pagina)
+    cadena_respuesta = formatear_titulos(paginado["resultados"])
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
     )
 
 
-def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: list[Permiso]) -> JSONResponse:
-    '''
-    A partir de un género y un actor devuelve la filmografía que cumple con lo especificado
-    '''
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: list[Permiso], pagina: int = 1) -> JSONResponse:
+    """
+    A partir de un género y un actor devuelve la filmografía que cumple con lo especificado.
+    Incluye paginado y conteo total de resultados.
+    """
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
     if respuesta.get("status") != 200:
@@ -208,28 +218,36 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: 
         )
 
     peliculas = respuesta["datos"]
-    filmografia = []
+
     actor = cadena_mayusculas(filtro_actor)
     genero = cadena_mayusculas(filtro_genero)
 
-    for pelicula in peliculas:
-        elenco = map(str.upper, pelicula.get('cast', []))
-        generos = map(str.upper, pelicula.get('genres', []))
-        if actor in elenco and genero in generos:
-            filmografia.append(pelicula)
+    filmografia = [
+        pelicula for pelicula in peliculas
+        if actor in map(str.upper, pelicula.get('cast', []))
+        and genero in map(str.upper, pelicula.get('genres', []))
+    ]
 
-    cadena_respuesta = f'\nPelículas del actor {filtro_actor.title()} y género {filtro_genero.title()}:\n'
-    cadena_respuesta += f"\nCantidad de resultados: {len(filmografia)}\n"
-    cadena_respuesta += formatear_titulos(filmografia)
+    paginado = paginar_resultados(filmografia, pagina)
+    cadena_respuesta = (
+        f"\nPelículas del actor {filtro_actor.title()} y género {filtro_genero.title()}:\n"
+        f"\nCantidad de resultados: {paginado['totalResultados']}\n"
+        + formatear_titulos(paginado["resultados"])
+    )
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": cadena_respuesta}
+        content={
+            "pagina": paginado["pagina"],
+            "totalPaginas": paginado["totalPaginas"],
+            "totalResultados": paginado["totalResultados"],
+            "contenido": cadena_respuesta
+        }
     )
 
 
 def get_pelicula_id(titulo: str, año: int, permisos: list[Permiso]):
-    verificar_permisos(permisos, [Permiso.VER, Permiso.TODO])
+    verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -275,7 +293,7 @@ def post_pelicula(pelicula: Pelicula, permisos: list[Permiso]) -> JSONResponse:
     '''
     Método que permite persistir una película en el archivo 'movies.json'
     '''
-    verificar_permisos(permisos, [Permiso.CREAR, Permiso.TODO])
+    verificar_permisos_servidor(permisos, [Permiso.CREAR, Permiso.TODO])
 
     respuesta = get_peliculas()
 
@@ -287,7 +305,8 @@ def post_pelicula(pelicula: Pelicula, permisos: list[Permiso]) -> JSONResponse:
 
     peliculas = respuesta["datos"]
     peliculas.append(pelicula.model_dump())
-
+    # OJO: Testing
+    print(pelicula.model_dump())
     try:
         with open('movies.json', 'w', encoding='utf-8') as archivo:
             json.dump(peliculas, archivo, ensure_ascii=False, indent=4)
@@ -300,6 +319,7 @@ def post_pelicula(pelicula: Pelicula, permisos: list[Permiso]) -> JSONResponse:
         status_code=status.HTTP_201_CREATED,
         content={"contenido": "Película agregada con éxito"}
     )
+
 
 def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security)) -> list[Permiso]:
     '''
@@ -331,7 +351,7 @@ def buscar_usuario(username: str) -> dict[str, Any] | None:
 
 
 def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.ELIMINAR, Permiso.TODO])
+    verificar_permisos_servidor(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -361,9 +381,10 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[P
         content={
             "contenido": f"Película '{titulo}' ({año}) eliminada correctamente"}
     )
-    
+
+
 def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: list[Permiso]) -> JSONResponse:
-    verificar_permisos(permisos, [Permiso.EDITAR, Permiso.TODO])
+    verificar_permisos_servidor(permisos, [Permiso.EDITAR, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
         return JSONResponse(
@@ -374,7 +395,8 @@ def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: lis
     if id_pelicula < 0 or id_pelicula >= len(peliculas):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"error": f"No se encontró una película con el ID {id_pelicula}"}
+            content={
+                "error": f"No se encontró una película con el ID {id_pelicula}"}
         )
     peliculas[id_pelicula] = pelicula_actualizada.model_dump()
     try:
@@ -387,6 +409,86 @@ def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: lis
         )
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"contenido": f"Película '{pelicula_actualizada.titulo}' modificada con éxito"}
+        content={
+            "contenido": f"Película '{pelicula_actualizada.titulo}' modificada con éxito"}
     )
 
+
+def get_generos() -> JSONResponse:
+    respuesta = get_peliculas()
+    if respuesta.get("status") != 200:
+        return JSONResponse(
+            status_code=respuesta["status"],
+            content={"error": respuesta.get("error")}
+        )
+    generos = {}
+    peliculas = respuesta['datos']
+    for pelicula in peliculas:
+        for genero in pelicula['genres']:
+            if genero in generos:
+                generos[genero] += 1
+            else:
+                generos[genero] = 1
+    # OJO: Testing
+    print(f'-- Generos obtenidos -- ')
+    print(generos)
+    return JSONResponse(status_code=status.HTTP_200_OK, content=generos)
+
+
+def paginar_resultados(peliculas, pagina: int, tamaño_pagina: int = RESULTADOS_POR_PAGINA):
+    """
+    Aplica paginación a una lista de resultados.
+    Retorna un diccionario con metadatos y la página solicitada.
+    """
+    total_peliculas = len(peliculas)
+    total_paginas = (total_peliculas + tamaño_pagina - 1) // tamaño_pagina
+
+    if pagina < 1:
+        pagina = 1
+    elif pagina > total_paginas:
+        pagina = total_paginas if total_paginas > 0 else 1
+
+    inicio = (pagina - 1) * tamaño_pagina
+    final = inicio + tamaño_pagina
+    resultados = peliculas[inicio:final]
+
+    # OJO: Para testing:
+    print("-- Resultados del paginado -- ")
+    print(f'Pagina: {pagina}')
+    print(f'Inicio: {inicio}')
+    print(f'Final: {final}')
+    print(f'{resultados}')
+    # OJO: Borrar antes de entregar
+
+    return {
+        "totalPaginas": total_paginas,
+        "pagina": pagina,
+        "resultados": resultados,
+        "totalResultados": total_peliculas
+    }
+
+
+def formatear_datos_pelicula(pelicula: dict) -> str:
+    return (
+        f"Título: {pelicula.get('title', 'N/A')}\n"
+        f"Año: {pelicula.get('year', 'N/A')}\n"
+        f"Elenco: {', '.join(pelicula.get('cast', []))}\n"
+        f"Géneros: {', '.join(pelicula.get('genres', []))}\n"
+        f"Sinopsis: {pelicula.get('extract', 'Sin sinopsis disponible')}\n"
+    )
+
+
+def descargar_movies_json() -> None:
+    ruta: str = "movies.json"
+    url: str = "https://raw.githubusercontent.com/prust/wikipedia-movie-data/master/movies.json"
+    if os.path.exists(ruta):
+        print(f"El archivo '{ruta}' ya existe. No se descargará nuevamente.")
+        return
+    print(f"Descargando archivo '{ruta}'")
+    respuesta = requests.get(url)
+    if respuesta.status_code == 200:
+        with open(ruta, "wb") as f:
+            f.write(respuesta.content)
+        print(f"Archivo '{ruta}' descargado correctamente.")
+    else:
+        print(f"Error al descargar el archivo: HTTP {respuesta.status_code}")

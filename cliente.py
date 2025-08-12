@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula
-from utils import validar_entero, cadena_mayusculas
+from utils import validar_entero, cadena_mayusculas, verificar_permisos_cliente
 from modelos import Permiso, Rol
 
 usuario_actual = None
@@ -12,19 +12,20 @@ sesion_iniciada = False
 
 BASE_URL = "http://192.168.1.70:8000"
 
+
 def menu_general():
     global sesion_iniciada, usuario_actual, usuario_rol
+    # Inicio de sesión
     while not sesion_iniciada:
         verificar_permisos()
+    # Si el usuario no es admin o editor, solo puede hacer consultas
     if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
-            menu_consultas()
-    
+        menu_consultas()
+    # Si el usuario es admin o editor, puede acceder al menú general
     if usuario_rol in [Rol.ADMIN, Rol.EDITOR]:
         while True:
             print("--           General             --")
-            # Permiso VER, TODO
             print("-    1.  Menú de consultas        -")
-            # Permiso CREAR, MODIFICAR,ELIMINAR, TODO
             print("-    2.  Menú de ABM              -")
             print("-    0. Salir                     -")
             print("-----------------------------------")
@@ -42,41 +43,38 @@ def menu_general():
 
 def menu_abm():
     global usuario_rol
+
     if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
         print("No posee los permisos suficientes para realizar esta acción")
-        return 
-    
+        return
+
     while True:
-        # ABM
-        print("--                 Menu ABM                      --")
-        # Permiso CREAR
+        print("--                 Menú ABM                      --")
         print("-    1. Agregar película nueva                    -")
-        # Permiso EDITAR
         print("-    2. Modificar película                        -")
-        # Permiso ELIMINAR
         print("-    3. Eliminar película                         -")
-        # Permiso VER
-        print("-    4. Consultar ultimas peliculas agregadas     -")
+        print("-    4. Consultar últimas películas agregadas     -")
         print("-    0. Salir                                     -")
         print("---------------------------------------------------")
         opcion = input("Ingrese una opción: ")
+
         if opcion == '1':
             agregar_pelicula()
         elif opcion == '2':
-            pass
+            modificar_pelicula()
         elif opcion == '3':
-            pass
+            eliminar_pelicula()
         elif opcion == '4':
             pass
+            #OJO: Agregar un consultar_ultimas_peliculas()
         elif opcion == '0':
-            break
+            return
         else:
             print("Opción no válida. Reintente.")
-            continue
-
 
 def menu_consultas():
-
+    # Todas estas acciones son accesibles por todos los roles que tengan el permiso 'ver'
+    # Asumimos que el permiso 'ver' es el por defecto al crear un usuario ya que es la funcionalidad principal
     while True:
         print("--                   Menu Consultas              --")
         print("-    1.  Mostrar todas las películas              -")
@@ -120,19 +118,20 @@ def menu_consultas():
 
 # Métodos GET
 
-
 def consultar_todas():
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(f"{BASE_URL}/allMovies", auth=auth)
     procesar_respuesta(respuesta)
 
 
 def buscar_por_titulo() -> None:
     global permisos_usuario
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
     titulo = input("Ingrese un título: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
@@ -140,21 +139,21 @@ def buscar_por_titulo() -> None:
         f"{BASE_URL}/filteredMovies", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
 
-
 def buscar_filmografia() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
     actor = input("Ingrese un actor: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.get(
-        f"{BASE_URL}/filmography", params={"name": actor}, auth = auth)
+        f"{BASE_URL}/filmography", params={"name": actor}, auth=auth)
     procesar_respuesta(respuesta)
-
 
 def buscar_por_genero() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
     i = 0
     generos = []
@@ -173,7 +172,8 @@ def buscar_por_genero() -> None:
 
 def buscar_sinopsis() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
     titulo = input("Ingrese un título: ")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
@@ -188,7 +188,8 @@ def buscar_peliculas_año() -> None:
     Devuelve: Lista de películas de dicho año
     '''
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
     año = validar_entero('Ingrese el año de estreno: ',
                          "Error: Ingrese un año válido")
@@ -200,8 +201,10 @@ def buscar_peliculas_año() -> None:
 
 def buscar_filmografia_genero() -> None:
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción.")
         return
+
     actor = input('Ingrese un actor: ')
     genero = input('Ingrese un género: ')
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
@@ -212,14 +215,13 @@ def buscar_filmografia_genero() -> None:
 
 def agregar_pelicula():
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
-        return
-    if not (Permiso.CREAR in permisos_usuario or Permiso.TODO in permisos_usuario):
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.CREAR, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
+
     pelicula = crear_pelicula()
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) #type: ignore
-    
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
+
     # CORRECCIÓN: Se envía el diccionario de la película directamente, no un objeto anidado
     respuesta = requests.post(f"{BASE_URL}/agregarPelicula",
                               json=pelicula,
@@ -230,7 +232,7 @@ def agregar_pelicula():
 def modificar_pelicula():
     global permisos_usuario, usuario_actual, contraseña_actual
 
-    if not permisos_usuario or (Permiso.EDITAR not in permisos_usuario and Permiso.TODO not in permisos_usuario):
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.EDITAR, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
 
@@ -301,21 +303,21 @@ def modificar_pelicula():
             print("Opción inválida. Intente nuevamente.")
 
 
-def borrar_pelicula():
+def eliminar_pelicula():
     global permisos_usuario, usuario_actual, contraseña_actual
-    if not permisos_usuario:
-        return
-    if not (Permiso.ELIMINAR in permisos_usuario or Permiso.TODO in permisos_usuario):
+
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.ELIMINAR, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
+
     titulo = input("Ingrese el título exacto de la película: ").strip()
     año = validar_entero("Ingrese el año de estreno: ",
                          "Error: Ingrese un año válido")
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     respuesta = requests.delete(
         f"{BASE_URL}/eliminarPelicula",
-        params = {"title": titulo, "year": año},
-        auth = auth
+        params={"title": titulo, "year": año},
+        auth=auth
     )
     procesar_respuesta(respuesta)
 
@@ -336,7 +338,67 @@ def verificar_permisos():
         permisos_usuario = r.json()['permisos']
         sesion_iniciada = True
         print("Acceso concedido, bienvenido.")
-menu_general()
+
+#mostrar_peliculas_paginadas("peliculasPorAño", {"titulo": "pepe", año: 2010})
+
+def mostrar_peliculas_paginadas(endpoint: str, params: dict):
+    global usuario_actual, contraseña_actual
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
+    pagina = 1
+    while True:
+        params_pagina = params.copy()
+        params_pagina["pagina"] = pagina
+
+        respuesta = requests.get(
+            f"{BASE_URL}/{endpoint}", params=params_pagina, auth=auth)
+
+        if respuesta.status_code != 200:
+            print("Error al obtener datos:", respuesta.status_code)
+            break
+
+        datos = respuesta.json()
+        resultados = datos.get("resultados", [])
+        total_paginas = datos.get("totalPaginas", 1)
+        pagina_actual = datos.get("pagina", 1)
+        total_resultados = datos.get("totalResultados", 0)
+
+        if not resultados:
+            print("No hay resultados para mostrar.")
+            break
+
+        print(
+            f"\nPágina {pagina_actual}/{total_paginas} - Total resultados: {total_resultados}")
+        for id, pelicula in enumerate(resultados, start=1 + (pagina_actual - 1)*len(resultados)):
+            print(f"{id}. {pelicula}")
+
+        opciones = []
+        if pagina_actual > 1:
+            opciones.append("A: Página anterior")
+        if pagina_actual < total_paginas:
+            opciones.append("D: Página siguiente")
+        opciones.append("S: Salir")
+        opciones.append("N° de Página")
+
+        print(" | ".join(opciones))
+        opcion = cadena_mayusculas(input(
+            "Seleccione una opción o ingrese número de página: "))
+
+        if opcion == "D" and pagina_actual < total_paginas:
+            pagina += 1
+        elif opcion == "A" and pagina_actual > 1:
+            pagina -= 1
+        elif opcion == "S":
+            break
+        elif opcion.isdigit():
+            num_pagina = int(opcion)
+            if 1 <= num_pagina <= total_paginas:
+                pagina = num_pagina
+            else:
+                print(
+                    f"Número de página inválido. Debe estar entre 1 y {total_paginas}.")
+        else:
+            print("Opción no válida, intente nuevamente.")
 
 
-# OJO: Agregar paginado
+if __name__ == "__main__":
+    menu_general()
