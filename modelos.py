@@ -17,8 +17,8 @@ class Rol(Enum):
 
 
 class Pelicula(BaseModel):
-    titulo: str
-    año: int
-    elenco: list[str]
-    generos: list[str]
-    sinopsis: str
+    title: str
+    year: int
+    cast: list[str]
+    genres: list[str]
+    extract: str

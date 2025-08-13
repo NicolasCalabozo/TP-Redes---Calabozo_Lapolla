@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula
-from utils import validar_entero, cadena_mayusculas, verificar_permisos_cliente
+from utils import validar_entero, cadena_mayusculas, verificar_permisos_cliente, limpiar_consola
 from modelos import Permiso, Rol
 
 usuario_actual = None
@@ -10,7 +10,7 @@ permisos_usuario = []
 usuario_rol = Rol.ADMIN
 sesion_iniciada = False
 
-BASE_URL = "http://192.168.1.70:8000"
+BASE_URL = "http://192.168.0.173:8000"
 
 
 def menu_general():
@@ -24,6 +24,7 @@ def menu_general():
     # Si el usuario es admin o editor, puede acceder al menú general
     if usuario_rol in [Rol.ADMIN, Rol.EDITOR]:
         while True:
+            limpiar_consola()
             print("--           General             --")
             print("-    1.  Menú de consultas        -")
             print("-    2.  Menú de ABM              -")
@@ -31,13 +32,18 @@ def menu_general():
             print("-----------------------------------")
             opcion = input("Ingrese una opción: ")
             if opcion == '1':
+                limpiar_consola()
                 menu_consultas()
             elif opcion == '2':
+                limpiar_consola()
                 menu_abm()
             elif opcion == '0':
+                print("¡Hasta Luego!")
                 break
             else:
-                print("Opción no válida. Reintente.")
+                print("Opción no válida, intente nuevamente")
+                input("Presione Enter para continuar...")
+                limpiar_consola()
                 continue
 
 
@@ -49,6 +55,7 @@ def menu_abm():
         return
 
     while True:
+        limpiar_consola()
         print("--                 Menú ABM                      --")
         print("-    1. Agregar película nueva                    -")
         print("-    2. Modificar película                        -")
@@ -59,10 +66,13 @@ def menu_abm():
         opcion = input("Ingrese una opción: ")
 
         if opcion == '1':
+            limpiar_consola()
             agregar_pelicula()
         elif opcion == '2':
+            limpiar_consola()
             modificar_pelicula()
         elif opcion == '3':
+            limpiar_consola()
             eliminar_pelicula()
         elif opcion == '4':
             pass
@@ -70,7 +80,9 @@ def menu_abm():
         elif opcion == '0':
             return
         else:
-            print("Opción no válida. Reintente.")
+            print("Opción no válida, intente nuevamente")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
 
 
 def menu_consultas():
@@ -90,47 +102,53 @@ def menu_consultas():
 
         opcion = input("Ingrese una opción: ")
         if opcion == '1':
+            limpiar_consola()
             consultar_todas()
 
         elif opcion == '2':
+            limpiar_consola()
             buscar_por_titulo()
 
         elif opcion == '3':
+            limpiar_consola()
             buscar_filmografia()
 
         elif opcion == '4':
+            limpiar_consola()
             buscar_por_genero()
 
         elif opcion == '5':
+            limpiar_consola()
             buscar_sinopsis()
 
         elif opcion == '6':
+            limpiar_consola()
             buscar_peliculas_año()
 
         elif opcion == '7':
+            limpiar_consola()
             buscar_filmografia_genero()
 
         elif opcion == '0':
+            limpiar_consola()
             break
 
         else:
-            print("Opción no válida. Reintente.")
-            continue
+            print("Opción no válida, intente nuevamente")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
+
 
 # Métodos GET
 
-
 def consultar_todas():
     global permisos_usuario, usuario_actual, contraseña_actual
-    print(f"Los permisos: {permisos_usuario}")
-    print(f"Funcion: {verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO])}")
+    
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(f"{BASE_URL}/allMovies", auth=auth)
-    procesar_respuesta(respuesta)
-
+    
+    mostrar_peliculas_paginadas("allMovies", params={})
 
 def buscar_por_titulo() -> None:
     global permisos_usuario
@@ -138,42 +156,31 @@ def buscar_por_titulo() -> None:
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     titulo = input("Ingrese un título: ")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(
-        f"{BASE_URL}/filteredMovies", params={"title": titulo}, auth=auth)
-    procesar_respuesta(respuesta)
-
+    mostrar_peliculas_paginadas("filteredMovies", {"title": titulo})
 
 def buscar_filmografia() -> None:
-    global permisos_usuario, usuario_actual, contraseña_actual
+    global permisos_usuario
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
     actor = input("Ingrese un actor: ")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(
-        f"{BASE_URL}/filmography", params={"name": actor}, auth=auth)
-    procesar_respuesta(respuesta)
+    mostrar_peliculas_paginadas("filmography", {"name": actor})
 
 
 def buscar_por_genero() -> None:
-    global permisos_usuario, usuario_actual, contraseña_actual
+    global permisos_usuario
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    i = 0
     generos = []
-    while (True):
+    i = 0
+    while True:
         i += 1
-        generos.append(input(f'Ingrese un género ({i}):'))
-        opcion = cadena_mayusculas(input(
-            '¿Desea seguir ingresando géneros? (S/N): '))
+        generos.append(input(f'Ingrese un género ({i}): '))
+        opcion = cadena_mayusculas(input('¿Desea seguir ingresando géneros? (S/N): '))
         if opcion == 'N':
             break
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(
-        f"{BASE_URL}/moviesByGender", params={"generos": generos}, auth=auth)
-    procesar_respuesta(respuesta)
+    mostrar_peliculas_paginadas("moviesByGender", {"generos": generos})
 
 
 def buscar_sinopsis() -> None:
@@ -186,37 +193,27 @@ def buscar_sinopsis() -> None:
     respuesta = requests.get(
         f"{BASE_URL}/movieSinopsis", params={"title": titulo}, auth=auth)
     procesar_respuesta(respuesta)
+    input("Presione Enter para continuar...")
+    limpiar_consola()
 
 
 def buscar_peliculas_año() -> None:
-    '''
-    Requiere: Input de un año
-    Devuelve: Lista de películas de dicho año
-    '''
-    global permisos_usuario, usuario_actual, contraseña_actual
+    global permisos_usuario
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-    año = validar_entero('Ingrese el año de estreno: ',
-                         "Error: Ingrese un año válido")
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(
-        f"{BASE_URL}/moviesByYear", params={"year": año}, auth=auth)
-    procesar_respuesta(respuesta)
+    año = validar_entero('Ingrese el año de estreno: ', "Error: Ingrese un año válido")
+    mostrar_peliculas_paginadas("moviesByYear", {"year": año})
 
 
 def buscar_filmografia_genero() -> None:
-    global permisos_usuario, usuario_actual, contraseña_actual
+    global permisos_usuario
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.VER, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-
     actor = input('Ingrese un actor: ')
     genero = input('Ingrese un género: ')
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-    respuesta = requests.get(
-        f"{BASE_URL}/filmographyByGender", params={"name": actor, "gender": genero}, auth=auth)
-    procesar_respuesta(respuesta)
+    mostrar_peliculas_paginadas("filmographyByGender", {"name": actor, "gender": genero})
 
 
 def agregar_pelicula():
@@ -224,13 +221,14 @@ def agregar_pelicula():
     if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.CREAR, Permiso.TODO]):
         print("No tiene los permisos necesarios para realizar esta acción.")
         return
-
     pelicula = crear_pelicula()
+    
+    if pelicula is None:
+        return
+    
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
-
-    # CORRECCIÓN: Se envía el diccionario de la película directamente, no un objeto anidado
     respuesta = requests.post(f"{BASE_URL}/agregarPelicula",
-                              json=pelicula,
+                              json=pelicula.model_dump(),
                               auth=auth)
     procesar_respuesta(respuesta)
 
@@ -330,27 +328,35 @@ def eliminar_pelicula():
 
 def verificar_permisos():
     global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada, usuario_rol
+    limpiar_consola()
+    print("----             Log In            ---- ")
     usuario = input("Ingrese su usuario: ").strip()
     contraseña = input("Ingrese su contraseña: ").strip()
-    # OJO: Agregar funcion de regex para creacion de usuarios y contraseña
     auth = HTTPBasicAuth(usuario, contraseña)
     r = requests.post(f"{BASE_URL}/verificarAcceso", auth=auth)
     if r.status_code != 200:
-        print(f"Acceso denegado: {r.json().get('acceso')}")  # Mensaje de error
+        print(f"Acceso denegado: Credenciales incorrectas o usuario inexistente.")  # Mensaje de error
+        input("Presione Enter para continuar...")
+        limpiar_consola()
     else:
-        global permisos_usuario, sesion_iniciada, usuario_actual
+        global permisos_usuario, sesion_iniciada, usuario_actual, contraseña_actual
         usuario_actual = usuario
+        contraseña_actual = contraseña
         #usuario_rol = r.json()['rol']
         permisos_usuario = r.json()['permisos']
         sesion_iniciada = True
-        print("Acceso concedido, bienvenido.")
+        print(f"Acceso concedido. ¡Bienvenido, {usuario}!")
+        input("Presione Enter para continuar...")
+        limpiar_consola()
+        
 
 
 def mostrar_peliculas_paginadas(endpoint: str, params: dict):
     global usuario_actual, contraseña_actual
-    auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
+    auth = HTTPBasicAuth(usuario_actual, contraseña_actual) #type: ignore
     pagina = 1
     while True:
+        limpiar_consola()
         params_pagina = params.copy()
         params_pagina["pagina"] = pagina
 
@@ -360,49 +366,52 @@ def mostrar_peliculas_paginadas(endpoint: str, params: dict):
         if respuesta.status_code != 200:
             print("Error al obtener datos:", respuesta.status_code)
             break
-
+        
         datos = respuesta.json()
-        resultados = datos.get("resultados", [])
+        contenido = datos.get("contenido", "")
         total_paginas = datos.get("totalPaginas", 1)
         pagina_actual = datos.get("pagina", 1)
         total_resultados = datos.get("totalResultados", 0)
 
-        if not resultados:
+        if not contenido:
             print("No hay resultados para mostrar.")
             break
 
-        print(
-            f"\nPágina {pagina_actual}/{total_paginas} - Total resultados: {total_resultados}")
-        for id, pelicula in enumerate(resultados, start=1 + (pagina_actual - 1)*len(resultados)):
-            print(f"{id}. {pelicula}")
+        print(f"\nPágina {pagina_actual}/{total_paginas} - Total resultados: {total_resultados}")
+        print(contenido)
 
         opciones = []
-        if pagina_actual > 1:
-            opciones.append("A: Página anterior")
-        if pagina_actual < total_paginas:
-            opciones.append("D: Página siguiente")
-        opciones.append("S: Salir")
-        opciones.append("N° de Página")
+        if total_paginas > 1:
+            if pagina_actual > 1:
+                opciones.append("A: Página anterior")
+            if pagina_actual < total_paginas:
+                opciones.append("D: Página siguiente")
+            opciones.append("N° de Página")
+        opciones.append("V: Volver")
 
         print(" | ".join(opciones))
-        opcion = cadena_mayusculas(input(
-            "Seleccione una opción o ingrese número de página: "))
+        opcion = input(f"Seleccione una opción {'o ingrese número de página: ' if total_paginas > 1 else ': '}").strip().upper()
 
         if opcion == "D" and pagina_actual < total_paginas:
             pagina += 1
         elif opcion == "A" and pagina_actual > 1:
             pagina -= 1
-        elif opcion == "S":
+        elif opcion == "V":
+            limpiar_consola()
             break
         elif opcion.isdigit():
             num_pagina = int(opcion)
+            
             if 1 <= num_pagina <= total_paginas:
                 pagina = num_pagina
             else:
-                print(
-                    f"Número de página inválido. Debe estar entre 1 y {total_paginas}.")
+                print(f"Número de página inválido. Debe estar entre 1 y {total_paginas}.")
+                input("Presione Enter para continuar...")
+                limpiar_consola()
         else:
             print("Opción no válida, intente nuevamente.")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
 
 
 if __name__ == "__main__":

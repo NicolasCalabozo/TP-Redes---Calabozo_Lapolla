@@ -1,19 +1,19 @@
 from typing import Callable, Any
 from modelos import Permiso
 from fastapi import HTTPException, status
+import os
 
 
-def validar_opcion(opc: str) -> bool:
+def validar_opcion(input_str : str) -> bool:
     '''
-    Función para validar opciones S o N, donde se necesiten inputs de tipo Si o No (S/N) equivalente a (Y/N)
+    Función para validar opciones S o N, donde se necesiten inputs de tipo Sí o No (S/N).
+    Retorna True si la opción es 'S' (sí), False si es 'N' (no).
     '''
-    while True:
-        if (opc != "N" and opc != "S"):
-            print("Error: Opción incorrecta. Reintente (S/N).")
-        else:
-            break
-    return True if opc == 'S' else False
-
+    opc = cadena_mayusculas(input(input_str))
+    while opc not in ("S", "N"):
+        print("Error: Opción incorrecta. Reintente (S/N).")
+        opc = cadena_mayusculas(input(input_str))
+    return opc == "S"
 
 def salir(opc: str) -> bool:
     opcion = cadena_mayusculas(opc)
@@ -52,25 +52,21 @@ def validar_dato_input(mensaje_input: str, mensaje_error: str, tipo_dato: Callab
             print(mensaje_error)
 
 
-def verificar_permisos_servidor(permisos_usuario: list[Permiso], permisos_requeridos: list[Permiso]):
-    '''
-    Función que verifica los permisos de usuario necesarios para la posterior ejecución de otros métodos del servidor
-    Parámetros:
-        - Una lista de permisos de usuario
-        - Una lista de permisos requeridos
-    Funcionamiento:
-        - Levanta un error http en caso de que el usuario no tenga al menos uno de los permisos requeridos
-
-    '''
-    if not any(permiso in permisos_usuario for permiso in permisos_requeridos):
+def verificar_permisos_servidor(permisos_usuario: list[str], permisos_requeridos: list[Permiso]):
+    permisos_usuario_enum = [
+        Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
+    if not any(permiso in permisos_usuario_enum for permiso in permisos_requeridos):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="No tiene los permisos necesarios para realizar esta acción"
         )
 
-def verificar_permisos_cliente(permisos_usuario: list[str], permisos_requeridos: list[Permiso]) -> bool:
-    permisos_usuario_enum = [Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
+
+def verificar_permisos_cliente(permisos_usuario: list[Permiso], permisos_requeridos: list[Permiso]) -> bool:
+    permisos_usuario_enum = [
+        Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
     return any(p in permisos_requeridos for p in permisos_usuario_enum)
+
 
 def cadena_mayusculas(cadena: str) -> str:
     '''Devuelve una cadena formateada en mayúsculas y sin espacios en blanco al comienzo o al final,
@@ -88,3 +84,10 @@ def formatear_generos(generos: list[str], por_linea: int = 5) -> str:
         else:
             resultado += "\t"
     return resultado.strip()
+
+def limpiar_consola():
+    es_windows = os.name == 'nt'
+    if es_windows:
+        os.system('cls')
+    else:
+        os.system('clear')

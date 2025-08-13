@@ -1,35 +1,45 @@
 import requests
 from fastapi import status
 from utils import validar_opcion, validar_entero, cadena_mayusculas, salir
+from modelos import Pelicula
 
-def crear_pelicula() -> dict[str, str | int | list[str]]:
+def crear_pelicula() -> Pelicula | None:
     titulo = input("Ingrese el título de la película: ").strip()
     año = validar_entero('Ingrese el año de estreno: ',
                          "Error: Ingrese un año válido")
     elenco = []
-    opc = cadena_mayusculas(input('¿Desea ingresar el elenco? (S/N): '))
-    if validar_opcion(opc):
+    
+    if validar_opcion("¿Desea ingresar el elenco? (S/N): "):
         cadena_elenco = input(
             f"Ingrese el/los miembro/s del elenco, separados por coma: ")
-        elenco = map(str.strip, cadena_elenco.split(sep=','))
+        elenco = list(map(str.strip, cadena_elenco.split(',')))
     generos = []
-    opc = cadena_mayusculas(input(
-        "¿Desea ingresar los géneros de la película? (S/N): "))
-    if validar_opcion(opc):
+    if validar_opcion("¿Desea ingresar los generos? (S/N): "):
         generos_cadena = (
             input(f"Ingrese los generos de la película separados por coma: "))
-        generos = map(str.strip, generos_cadena.split(','))
+        generos = list(map(str.strip, generos_cadena.split(',')))
     sinopsis = ""
-    opc = cadena_mayusculas(input("¿Desea ingresar una sinopsis? (S/N): "))
-    if validar_opcion(opc):
+    if validar_opcion("¿Desea ingresar la sinopsis? (S/N): "):
         sinopsis = input("Ingrese la sinopsis: ")
-    pelicula = {
-        "title": titulo,
-        "year": año,
-        "cast": elenco,
-        "genres": generos,
-        "extract": sinopsis
-    }
+        
+    print("\n-- Resumen de la película --\n")
+    print(f"Título: {titulo}\n")
+    print(f"Año: {año}\n")
+    print(f"Elenco: {', '.join(elenco) if elenco else 'No ingresado'}\n")
+    print(f"Géneros: {', '.join(generos) if generos else 'No ingresado'}\n")
+    print(f"Sinopsis: {sinopsis if sinopsis else 'No ingresada'}\n")
+    print("----------------------------\n")
+        
+    if not validar_opcion("¿Desea guardar la película? (S/N): "):
+           return 
+        
+    pelicula = Pelicula(
+        title=titulo,
+        year=año,
+        cast=elenco,
+        genres=generos,
+        extract=sinopsis
+    )
     return pelicula
 
 # OJO: Completar método de modificar
