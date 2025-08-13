@@ -3,44 +3,56 @@ from fastapi import status
 from utils import validar_opcion, validar_entero, cadena_mayusculas, salir
 from modelos import Pelicula
 
-def crear_pelicula() -> Pelicula | None:
-    titulo = input("Ingrese el título de la película: ").strip()
-    año = validar_entero('Ingrese el año de estreno: ',
-                         "Error: Ingrese un año válido")
-    elenco = []
-    
-    if validar_opcion("¿Desea ingresar el elenco? (S/N): "):
-        cadena_elenco = input(
-            f"Ingrese el/los miembro/s del elenco, separados por coma: ")
-        elenco = list(map(str.strip, cadena_elenco.split(',')))
-    generos = []
-    if validar_opcion("¿Desea ingresar los generos? (S/N): "):
-        generos_cadena = (
-            input(f"Ingrese los generos de la película separados por coma: "))
-        generos = list(map(str.strip, generos_cadena.split(',')))
-    sinopsis = ""
-    if validar_opcion("¿Desea ingresar la sinopsis? (S/N): "):
-        sinopsis = input("Ingrese la sinopsis: ")
-        
-    print("\n-- Resumen de la película --\n")
-    print(f"Título: {titulo}\n")
-    print(f"Año: {año}\n")
-    print(f"Elenco: {', '.join(elenco) if elenco else 'No ingresado'}\n")
-    print(f"Géneros: {', '.join(generos) if generos else 'No ingresado'}\n")
-    print(f"Sinopsis: {sinopsis if sinopsis else 'No ingresada'}\n")
-    print("----------------------------\n")
-        
-    if not validar_opcion("¿Desea guardar la película? (S/N): "):
-           return 
-        
-    pelicula = Pelicula(
-        title=titulo,
-        year=año,
-        cast=elenco,
-        genres=generos,
-        extract=sinopsis
-    )
-    return pelicula
+def crear_pelicula():
+
+    pelicula_nueva = {
+        "title": "",
+        "year": 0,  # Se inicializa en 0 para consistencia de tipo
+        "cast": [],
+        "genres": [],
+        "extract": ""
+    }
+
+    # Bucle de menú interactivo
+    while True:
+        print("\n----- Menú de Creación de Película -----")
+        print(f"1. Título: {pelicula_nueva.get('title') or 'No ingresado'}")
+        print(f"2. Año: {pelicula_nueva.get('year') or 'No ingresado'}")
+        print(f"3. Elenco: {', '.join(pelicula_nueva.get('cast', [])) or 'No ingresado'}")
+        print(f"4. Géneros: {', '.join(pelicula_nueva.get('genres', [])) or 'No ingresado'}")
+        print(f"5. Sinopsis: {pelicula_nueva.get('extract') or 'No ingresada'}")
+        print("---------------------------------------")
+        print("6. Guardar película")
+        print("0. Cancelar y salir")
+
+        opcion = input("Seleccione el campo a ingresar/modificar (1-5) o una acción (6, 0): ").strip()
+
+        if opcion == '1':
+            pelicula_nueva["title"] = input("Ingrese el nuevo título: ").strip()
+        elif opcion == '2':
+            pelicula_nueva["year"] = validar_entero("Ingrese el nuevo año: ", "Error: Año inválido.")
+        elif opcion == '3':
+            elenco_str = input("Ingrese el nuevo elenco separado por coma: ")
+            pelicula_nueva["cast"] = [a.strip() for a in elenco_str.split(',')]
+        elif opcion == '4':
+            generos_str = input("Ingrese los nuevos géneros separados por coma: ")
+            pelicula_nueva["genres"] = [g.strip() for g in generos_str.split(',')]
+        elif opcion == '5':
+            pelicula_nueva["extract"] = input("Ingrese la nueva sinopsis: ")
+        elif opcion == '6':
+            if not pelicula_nueva["title"] or not pelicula_nueva["year"]:
+                print("\n¡Error! El título y el año son campos obligatorios para guardar.")
+                input("Presione Enter para continuar...")
+                continue
+            
+            pelicula_a_crear = Pelicula(**pelicula_nueva)
+            print("Datos de la película listos para ser guardados.")
+            return pelicula_a_crear
+        elif opcion == '0':
+            print("Creación cancelada.")
+            return None
+        else:
+            print("Opción inválida. Intente nuevamente.")
 
 # OJO: Completar método de modificar
 

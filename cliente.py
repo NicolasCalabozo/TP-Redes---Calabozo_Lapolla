@@ -10,7 +10,7 @@ permisos_usuario = []
 usuario_rol = Rol.ADMIN
 sesion_iniciada = False
 
-BASE_URL = "http://192.168.0.173:8000"
+BASE_URL = "http://192.168.1.70:8000"
 
 
 def menu_general():
