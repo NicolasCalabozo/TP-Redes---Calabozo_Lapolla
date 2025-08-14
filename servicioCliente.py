@@ -3,6 +3,10 @@ from fastapi import status
 from utils import validar_opcion, validar_entero, cadena_mayusculas, salir
 from modelos import Pelicula
 
+import asyncio
+import time
+import httpx
+
 def crear_pelicula():
 
     pelicula_nueva = {
@@ -106,3 +110,47 @@ def seleccionar_generos(lista_generos: list[str]) -> list[str]:
 
     return list(seleccionados)
 
+async def bombardear(url: str, rps: int, duracion: int, auth: tuple[str, str]):
+    """
+    Envía ráfagas de peticiones a una URL para probar el limitador de la API.
+
+    Args:
+        url (str): La URL completa del endpoint a probar.
+        rps (int): El número de peticiones por segundo a enviar.
+        duracion (int): El tiempo total en segundos que durará la prueba.
+        auth (Tuple[str, str]): Una tupla con (usuario, contraseña) para la autenticación.
+    """
+    intervalo = 1.0 / rps
+    print(f"\nIniciando bombardeo a {url}...")
+    print(f"Configuración: {rps} peticiones/segundo durante {duracion} segundos.")
+    
+    async with httpx.AsyncClient() as cliente:
+        fin_prueba = time.perf_counter() + duracion
+        enviadas = exitosas = errores_cliente = errores_servidor = 0
+
+        while time.perf_counter() < fin_prueba:
+            inicio_peticion = time.perf_counter()
+            try:
+                # Se incluye la autenticación en la petición
+                resp = await cliente.get(url, auth=auth, timeout=10)
+                if resp.status_code == 429: # Error "Too Many Requests"
+                    errores_servidor += 1
+                elif resp.status_code >= 400:
+                    errores_cliente += 1
+                else:
+                    exitosas += 1
+            except Exception as e:
+                errores_cliente += 1
+            
+            enviadas += 1
+            transcurrido = time.perf_counter() - inicio_peticion
+            
+            # Espera el tiempo restante para mantener la tasa de RPS
+            await asyncio.sleep(max(0, intervalo - transcurrido))
+
+    print("\n--- Resultados del Bombardeo ---")
+    print(f"Peticiones totales enviadas: {enviadas}")
+    print(f"Respuestas exitosas (2xx): {exitosas}")
+    print(f"Errores del limitador (429): {errores_servidor}")
+    print(f"Otros errores (cliente/timeout): {errores_cliente}")
+    print("---------------------------------")
