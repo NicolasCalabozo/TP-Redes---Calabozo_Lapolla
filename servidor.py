@@ -42,7 +42,7 @@ async def limitador(request: Request, call_next):
     return respuesta
 
 
-@app.get("/allMovies")
+@app.get("/allMovies") #OJO por algún motivo el bombardeo sale bien
 def allMovies(permisos: list[str] = Depends(obtener_permisos), pagina: int = 1) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_todos_titulos(permisos, pagina)
@@ -83,7 +83,7 @@ def filmographyByGender(name: str, gender: str, permisos: list[str] = Depends(ob
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_filmografia_por_genero(name, gender, permisos,pagina)
 
-@app.get("/obtenerGeneros")
+@app.get("/obtenerGeneros")  #OJO por algún motivo el bombardeo sale bien
 def obtenerGeneros(permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_generos()

@@ -424,6 +424,10 @@ def probar_limite_peticiones():
     y ejecuta la función de bombardeo.
     """
     global usuario_actual, contraseña_actual, BASE_URL
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción (se requiere permiso de administrador).")
+        input("Presione Enter para continuar...")
+        return
     print("--- Prueba de Carga del Limitador de la API ---")
     
     # Pedimos el endpoint a bombardear
