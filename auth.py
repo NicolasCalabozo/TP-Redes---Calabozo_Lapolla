@@ -36,7 +36,7 @@ def obtener_permisos(credenciales: HTTPBasicCredentials = Depends(security)) -> 
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
     contraseña_correcta = secrets.compare_digest(
         credenciales.password, usuario['password'])
-    
+
     if not contraseña_correcta:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     return [perm.value for perm in usuario['permisos']]
@@ -48,10 +48,11 @@ def obtener_rol(credenciales: HTTPBasicCredentials = Depends(security)) -> str:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
     contraseña_correcta = secrets.compare_digest(
         credenciales.password, usuario['password'])
-    
+
     if not contraseña_correcta:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
     return usuario['rol'].value
+
 
 def buscar_usuario(username: str) -> dict[str, Any] | None:
     for usuario in usuarios:

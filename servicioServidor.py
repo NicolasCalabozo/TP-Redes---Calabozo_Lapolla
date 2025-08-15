@@ -44,9 +44,6 @@ def get_todos_titulos(permisos: list[str], pagina: int = 1) -> JSONResponse:
     )
 
 
-# OJO: Devolver los datos de la pelicula formateados
-# OJO: Crear funcion para formatear peliculas
-
 def get_peliculas_por_titulo(titulo: str, permisos: list[str], pagina: int = 1) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
@@ -90,7 +87,6 @@ def get_filmografia(nombre: str, permisos: list[str], pagina: int = 1) -> JSONRe
     cadena_respuesta = formatear_titulos(
         paginado["resultados"], indice_inicial)
 
-
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
@@ -131,7 +127,6 @@ def get_peliculas_por_genero(generos: list[str], permisos: list[str], pagina: in
     indice_inicial = (pagina - 1) * RESULTADOS_POR_PAGINA + 1
     cadena_respuesta = formatear_titulos(
         paginado["resultados"], indice_inicial)
-
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -189,7 +184,6 @@ def get_peliculas_por_año(year: int, permisos: list[str], pagina: int = 1) -> J
     cadena_respuesta = formatear_titulos(
         paginado["resultados"], indice_inicial)
 
-
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content={
@@ -232,7 +226,6 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: 
     indice_inicial = (pagina - 1) * RESULTADOS_POR_PAGINA + 1
     cadena_respuesta = formatear_titulos(
         paginado["resultados"], indice_inicial)
-
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
@@ -303,7 +296,6 @@ def post_pelicula(pelicula: Pelicula, permisos: list[str]) -> JSONResponse:
 
     peliculas = respuesta["datos"]
     peliculas.append(pelicula.model_dump())
-    # OJO: Testing
     try:
         with open('movies.json', 'w', encoding='utf-8') as archivo:
             json.dump(peliculas, archivo, ensure_ascii=False, indent=4)
@@ -397,9 +389,7 @@ def get_generos() -> JSONResponse:
                 generos[genero] += 1
             else:
                 generos[genero] = 1
-    # OJO: Testing
-    print(f'-- Generos obtenidos -- ')
-    print(generos)
+
     return JSONResponse(status_code=status.HTTP_200_OK, content=generos)
 
 

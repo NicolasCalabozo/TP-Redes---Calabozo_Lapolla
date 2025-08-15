@@ -1,10 +1,10 @@
 from typing import Callable, Any
-from modelos import Permiso
+from modelos import Permiso, Rol
 from fastapi import HTTPException, status
 import os
 
 
-def validar_opcion(input_str : str) -> bool:
+def validar_opcion(input_str: str) -> bool:
     '''
     Función para validar opciones S o N, donde se necesiten inputs de tipo Sí o No (S/N).
     Retorna True si la opción es 'S' (sí), False si es 'N' (no).
@@ -14,6 +14,7 @@ def validar_opcion(input_str : str) -> bool:
         print("Error: Opción incorrecta. Reintente (S/N).")
         opc = cadena_mayusculas(input(input_str))
     return opc == "S"
+
 
 def salir(opc: str) -> bool:
     opcion = cadena_mayusculas(opc)
@@ -34,7 +35,6 @@ def validar_entero(mensaje_input: str, mensaje_error: str) -> int:
 
 def validar_dato_input(mensaje_input: str, mensaje_error: str, tipo_dato: Callable) -> Any:
     '''
-    OJO: No utilizada
     Funcion genérica de input que verifica el tipo de dato ingresado
     Parámetros:
         - mensaje_input: Mensaje que le mostraremos al usuario, indicando qué esperamos que ingrese 
@@ -53,6 +53,9 @@ def validar_dato_input(mensaje_input: str, mensaje_error: str, tipo_dato: Callab
 
 
 def verificar_permisos_servidor(permisos_usuario: list[str], permisos_requeridos: list[Permiso]):
+    '''
+    Convierte los roles en texto plano permisos_usuario al Enum Permiso y verifica si estan en la lista de permisos requeridos
+    '''
     permisos_usuario_enum = [
         Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
     if not any(permiso in permisos_usuario_enum for permiso in permisos_requeridos):
@@ -63,9 +66,25 @@ def verificar_permisos_servidor(permisos_usuario: list[str], permisos_requeridos
 
 
 def verificar_permisos_cliente(permisos_usuario: list[Permiso], permisos_requeridos: list[Permiso]) -> bool:
+    '''
+    Funcion análoga para el cliente, como los permisos del servidor vienen en forma de lista de strings,
+    se reconvierten al enum correspondiente Permisos para ejecutar la comparación.
+    '''
     permisos_usuario_enum = [
         Permiso(p) for p in permisos_usuario if p in Permiso._value2member_map_]
     return any(p in permisos_requeridos for p in permisos_usuario_enum)
+
+
+def verificar_rol_cliente(rol_usuario: str | None, roles_requeridos: list[Rol]) -> bool:
+    """
+    Convierte el rol de texto plano en el Enum Rol y verifica si está en la lista de roles requeridos.
+    """
+    try:
+        rol_enum = Rol(rol_usuario)  # Convierte texto en Enum
+    except ValueError:
+        return False  # Si el texto no coincide con ningún valor del Enum, no pasa la verificación
+
+    return rol_enum in roles_requeridos
 
 
 def cadena_mayusculas(cadena: str) -> str:
@@ -85,7 +104,11 @@ def formatear_generos(generos: list[str], por_linea: int = 5) -> str:
             resultado += "\t"
     return resultado.strip()
 
+
 def limpiar_consola():
+    '''
+    Función para lograr transiciones entre selección de opciones a la hora de navegar en el CLI
+    '''
     es_windows = os.name == 'nt'
     if es_windows:
         os.system('cls')

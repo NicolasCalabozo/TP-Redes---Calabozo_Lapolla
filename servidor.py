@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException , Query, Depends, status
+from fastapi import FastAPI, Request, HTTPException, Query, Depends, status
 import uvicorn
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import JSONResponse
@@ -12,17 +12,15 @@ from modelos import Pelicula
 from auth import security, obtener_permisos, obtener_rol
 app = FastAPI()
 
-#OJO: metodo que descargue el archivo en la ruta especificada
-#Que se ejecute siempre que no exista el archivo en el servidor
-
-VENTANA = timedelta(seconds = 1)   # Ventana de tiempo
-MAX_PETICIONES = 10             # Máximo de peticiones dentro de la ventana
-
+# Constantes para el rate limiter en el middleware
+VENTANA = timedelta(seconds=1)
+MAX_PETICIONES = 10
 cubos_ip: Dict[str, Deque[datetime]] = {}
+
 
 @app.middleware("http")
 async def limitador(request: Request, call_next):
-    ip = request.client.host # type: ignore
+    ip = request.client.host  # type: ignore
     ahora = datetime.now()
 
     cubo = cubos_ip.setdefault(ip, deque())
@@ -32,9 +30,10 @@ async def limitador(request: Request, call_next):
         cubo.popleft()
 
     if len(cubo) >= MAX_PETICIONES:
-        raise HTTPException(
-            status_code = status.HTTP_429_TOO_MANY_REQUESTS,
-            detail = "Demasiadas solicitudes: límite 10 req/s",
+        print("Demasiadas solicitudes: límite 10 req/s")
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": "Demasiadas solicitudes: límite 10 req/s"},
         )
 
     cubo.append(ahora)
@@ -42,7 +41,7 @@ async def limitador(request: Request, call_next):
     return respuesta
 
 
-@app.get("/allMovies") #OJO por algún motivo el bombardeo sale bien
+@app.get("/allMovies")
 def allMovies(permisos: list[str] = Depends(obtener_permisos), pagina: int = 1) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_todos_titulos(permisos, pagina)
@@ -81,12 +80,14 @@ def moviesByYear(year: int, permisos: list[str] = Depends(obtener_permisos), pag
 @app.get("/filmographyByGender")
 def filmographyByGender(name: str, gender: str, permisos: list[str] = Depends(obtener_permisos), pagina: int = 1) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
-    return ss.get_filmografia_por_genero(name, gender, permisos,pagina)
+    return ss.get_filmografia_por_genero(name, gender, permisos, pagina)
 
-@app.get("/obtenerGeneros")  #OJO por algún motivo el bombardeo sale bien
+
+@app.get("/obtenerGeneros")
 def obtenerGeneros(permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_generos()
+
 
 @app.get("/obtenerPeliculaPorId")
 def obtenerPelicula(titulo: str, año: int, permisos: list[str] = Depends(obtener_permisos)):
@@ -94,11 +95,13 @@ def obtenerPelicula(titulo: str, año: int, permisos: list[str] = Depends(obtene
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_pelicula_id(titulo, año, permisos)
 
+
 @app.post("/agregarPelicula")
-def agregarPelicula(pelicula:Pelicula, permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
+def agregarPelicula(pelicula: Pelicula, permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
     '''Endpoint de creación de películas'''
     verificar_permisos_servidor(permisos, [Permiso.CREAR, Permiso.TODO])
     return ss.post_pelicula(pelicula, permisos)
+
 
 @app.post("/verificarAcceso")
 def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
@@ -107,15 +110,18 @@ def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
     rol = obtener_rol(credentials)
     return {"permisos": permisos, "rol": rol}
 
+
 @app.delete("/eliminarPelicula")
 def eliminarPelicula(title: str, year: int, permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     return ss.eliminar_pelicula_por_titulo_y_año(title, year, permisos)
 
+
 @app.put("/modificarPelicula/{id_pelicula}")
 def modificar_pelicula(id_pelicula: int, pelicula: Pelicula, permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
     verificar_permisos_servidor(permisos, [Permiso.EDITAR, Permiso.TODO])
     return ss.put_pelicula(pelicula, id_pelicula, permisos)
+
 
 if __name__ == "__main__":
     ss.descargar_movies_json()
