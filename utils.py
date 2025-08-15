@@ -2,7 +2,7 @@ from typing import Callable, Any
 from modelos import Permiso, Rol
 from fastapi import HTTPException, status
 import os
-
+import socket
 
 def validar_opcion(input_str: str) -> bool:
     '''
@@ -114,3 +114,24 @@ def limpiar_consola():
         os.system('cls')
     else:
         os.system('clear')
+        
+
+def obtener_ip_local():
+    """
+    Función que obtiene la IP local (IPv4) de la máquina.
+
+    Se crea una conexión UDP ficticia a una dirección remota cualquiera.
+    Al preparar esta conexión, el sistema operativo nos indica qué IP local usaría para comunicarse.
+    De esta manera, podemos obtener la IP local del cliente.
+    """
+    #Se prepara un socket UDP
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        #Se realiza la conexión UDP ficticia
+        s.connect(("8.8.8.8", 80))
+        #Se obtiene la IPV4 del propio socket, que coincide con la IP del Cliente
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+    
