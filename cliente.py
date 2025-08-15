@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula, bombardear
-from utils import obtener_ip_local,validar_entero, validar_opcion, verificar_permisos_cliente, limpiar_consola, verificar_rol_cliente
+from utils import validar_entero, validar_opcion, verificar_permisos_cliente, limpiar_consola, verificar_rol_cliente
 from modelos import Permiso, Rol
 import asyncio
 
@@ -11,8 +11,9 @@ permisos_usuario = []
 rol_usuario: str | None = None
 sesion_iniciada = False
 
-#Completar la URL para testing
-BASE_URL = ""
+#Completar la URL para testing - Si está en la misma máquina
+#podemos usar 127.0.0.1 que es la ip de loopback
+BASE_URL = "http://IP_DEL_SERVIDOR:8000"
 
 
 def menu_general():
@@ -473,8 +474,5 @@ def probar_limite_peticiones():
 
     input("\nPrueba finalizada. Presione Enter para continuar...")
 
-
 if __name__ == "__main__":
-    ip_local = obtener_ip_local()
-    BASE_URL = f"http://{ip_local}:8000"
     menu_general()
