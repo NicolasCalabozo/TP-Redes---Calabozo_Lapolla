@@ -122,14 +122,14 @@ def obtener_ip_local():
 
     Se crea una conexión UDP ficticia a una dirección remota cualquiera.
     Al preparar esta conexión, el sistema operativo nos indica qué IP local usaría para comunicarse.
-    De esta manera, podemos obtener la IP local del cliente.
+    De esta manera, podemos obtener la IP local de la máquina.
     """
     #Se prepara un socket UDP
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         #Se realiza la conexión UDP ficticia
         s.connect(("8.8.8.8", 80))
-        #Se obtiene la IPV4 del propio socket, que coincide con la IP del Cliente
+        #Se obtiene la IPV4 del propio socket, que coincide con la IP de la máquina.
         ip = s.getsockname()[0]
     finally:
         s.close()
