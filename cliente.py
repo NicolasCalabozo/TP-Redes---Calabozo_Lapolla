@@ -1,8 +1,9 @@
 import requests
 from requests.auth import HTTPBasicAuth
-from servicioCliente import procesar_respuesta, crear_pelicula
+from servicioCliente import procesar_respuesta, crear_pelicula, bombardear
 from utils import validar_entero, cadena_mayusculas, verificar_permisos_cliente, limpiar_consola
 from modelos import Permiso, Rol
+import asyncio
 
 usuario_actual = None
 contraseña_actual = None
@@ -10,7 +11,7 @@ permisos_usuario = []
 rol_usuario = None
 sesion_iniciada = False
 
-BASE_URL = "http://192.168.0.173:8000"
+BASE_URL = "http://192.168.1.70:8000"
 
 
 def menu_general():
@@ -61,6 +62,7 @@ def menu_abm():
         print("-    2. Modificar película                        -")
         print("-    3. Eliminar película                         -")
         print("-    4. Consultar últimas películas agregadas     -")
+        print("-    5. Probar límite de peticiones (Stress Test) -")
         print("-    0. Salir                                     -")
         print("---------------------------------------------------")
         opcion = input("Ingrese una opción: ")
@@ -77,6 +79,9 @@ def menu_abm():
         elif opcion == '4':
             pass
             # OJO: Agregar un consultar_ultimas_peliculas()
+        elif opcion == '5':
+            limpiar_consola()
+            probar_limite_peticiones()
         elif opcion == '0':
             return
         else:
@@ -413,6 +418,39 @@ def mostrar_peliculas_paginadas(endpoint: str, params: dict):
             input("Presione Enter para continuar...")
             limpiar_consola()
 
+def probar_limite_peticiones():
+    """
+    Pide al usuario los parámetros para la prueba de estrés
+    y ejecuta la función de bombardeo.
+    """
+    global usuario_actual, contraseña_actual, BASE_URL
+    if not permisos_usuario or not verificar_permisos_cliente(permisos_usuario, [Permiso.TODO]):
+        print("No tiene los permisos necesarios para realizar esta acción (se requiere permiso de administrador).")
+        input("Presione Enter para continuar...")
+        return
+    print("--- Prueba de Carga del Limitador de la API ---")
+    
+    # Pedimos el endpoint a bombardear
+    endpoint = input("Ingrese el endpoint a probar (ej. /allMovies): ").strip()
+    if not endpoint.startswith('/'):
+        endpoint = '/' + endpoint
+    
+    full_url = BASE_URL + endpoint
+
+    # Pedimos los parámetros numéricos usando el validador
+    rps = validar_entero("Ingrese las peticiones por segundo (RPS): ", "Error: Debe ser un número entero.")
+    duracion = validar_entero("Ingrese la duración de la prueba en segundos: ", "Error: Debe ser un número entero.")
+
+    # Preparamos la tupla de autenticación
+    auth_tuple = (usuario_actual, contraseña_actual)
+
+    # Ejecutamos la función asíncrona de bombardeo
+    try:
+        asyncio.run(bombardear(full_url, rps, duracion, auth_tuple))
+    except Exception as e:
+        print(f"Ocurrió un error al ejecutar la prueba: {e}")
+
+    input("\nPrueba finalizada. Presione Enter para continuar...")
 
 if __name__ == "__main__":
     menu_general()
