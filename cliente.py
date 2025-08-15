@@ -7,22 +7,22 @@ from modelos import Permiso, Rol
 usuario_actual = None
 contraseña_actual = None
 permisos_usuario = []
-usuario_rol = Rol.ADMIN
+rol_usuario = None
 sesion_iniciada = False
 
 BASE_URL = "http://192.168.0.173:8000"
 
 
 def menu_general():
-    global sesion_iniciada, usuario_actual, usuario_rol
+    global sesion_iniciada, usuario_actual, rol_usuario
     # Inicio de sesión
     while not sesion_iniciada:
         verificar_permisos()
     # Si el usuario no es admin o editor, solo puede hacer consultas
-    if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
+    if rol_usuario not in [Rol.ADMIN, Rol.EDITOR]:
         menu_consultas()
     # Si el usuario es admin o editor, puede acceder al menú general
-    if usuario_rol in [Rol.ADMIN, Rol.EDITOR]:
+    if rol_usuario in [Rol.ADMIN, Rol.EDITOR]:
         while True:
             limpiar_consola()
             print("--           General             --")
@@ -48,9 +48,9 @@ def menu_general():
 
 
 def menu_abm():
-    global usuario_rol
+    global rol_usuario
 
-    if usuario_rol not in [Rol.ADMIN, Rol.EDITOR]:
+    if rol_usuario not in [Rol.ADMIN, Rol.EDITOR]:
         print("No posee los permisos suficientes para realizar esta acción")
         return
 
@@ -327,7 +327,7 @@ def eliminar_pelicula():
 
 
 def verificar_permisos():
-    global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada, usuario_rol
+    global usuario_actual, contraseña_actual, permisos_usuario, sesion_iniciada, rol_usuario
     limpiar_consola()
     print("----             Log In            ---- ")
     usuario = input("Ingrese su usuario: ").strip()
@@ -339,11 +339,11 @@ def verificar_permisos():
         input("Presione Enter para continuar...")
         limpiar_consola()
     else:
-        global permisos_usuario, sesion_iniciada, usuario_actual, contraseña_actual
+        global permisos_usuario, sesion_iniciada, usuario_actual, contraseña_actual, rol_usuario
         usuario_actual = usuario
         contraseña_actual = contraseña
-        #usuario_rol = r.json()['rol']
         permisos_usuario = r.json()['permisos']
+        rol_usuario = r.json()['rol']
         sesion_iniciada = True
         print(f"Acceso concedido. ¡Bienvenido, {usuario}!")
         input("Presione Enter para continuar...")

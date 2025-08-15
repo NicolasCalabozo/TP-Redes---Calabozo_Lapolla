@@ -9,7 +9,7 @@ from typing import Deque, Dict
 from utils import verificar_permisos_servidor
 import servicioServidor as ss
 from modelos import Pelicula
-from auth import security, obtener_permisos
+from auth import security, obtener_permisos, obtener_rol
 app = FastAPI()
 
 #OJO: metodo que descargue el archivo en la ruta especificada
@@ -104,7 +104,8 @@ def agregarPelicula(pelicula:Pelicula, permisos: list[str] = Depends(obtener_per
 def verificarAcceso(credentials: HTTPBasicCredentials = Depends(security)):
     '''Endpoint para la obtencion de permisos del usuario'''
     permisos = obtener_permisos(credentials)
-    return {"permisos": permisos}
+    rol = obtener_rol(credentials)
+    return {"permisos": permisos, "rol": rol}
 
 @app.delete("/eliminarPelicula")
 def eliminarPelicula(title: str, year: int, permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
