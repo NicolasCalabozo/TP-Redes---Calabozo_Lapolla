@@ -1,6 +1,6 @@
-from fastapi import FastAPI, Request, HTTPException, Query, Depends, status
+from fastapi import FastAPI, Request, Query, Depends, status
 import uvicorn
-from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.security import HTTPBasicCredentials
 from fastapi.responses import JSONResponse
 from modelos import Permiso
 from collections import deque
@@ -10,6 +10,7 @@ from utils import verificar_permisos_servidor
 import servicioServidor as ss
 from modelos import Pelicula
 from auth import security, obtener_permisos, obtener_rol
+
 app = FastAPI()
 
 # Constantes para el rate limiter en el middleware
@@ -79,12 +80,15 @@ def moviesByYear(year: int, permisos: list[str] = Depends(obtener_permisos), pag
 
 @app.get("/filmographyByGender")
 def filmographyByGender(name: str, gender: str, permisos: list[str] = Depends(obtener_permisos), pagina: int = 1) -> JSONResponse:
+    '''Endpoint para obtener la filmografía de un actor, basada en un género'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_filmografia_por_genero(name, gender, permisos, pagina)
 
 
 @app.get("/obtenerGeneros")
+
 def obtenerGeneros(permisos: list[str] = Depends(obtener_permisos)) -> JSONResponse:
+    '''Endpoint no utilizado - Pensado para el selector de géneros'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     return ss.get_generos()
 

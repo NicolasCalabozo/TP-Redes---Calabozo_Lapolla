@@ -1,6 +1,5 @@
-from utils import verificar_permisos_servidor
 import secrets
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from modelos import Rol, Permiso
 from typing import Any

@@ -1,7 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from servicioCliente import procesar_respuesta, crear_pelicula, bombardear
-from utils import validar_entero, cadena_mayusculas, verificar_permisos_cliente, limpiar_consola, verificar_rol_cliente
+from utils import validar_entero, validar_opcion, verificar_permisos_cliente, limpiar_consola, verificar_rol_cliente
 from modelos import Permiso, Rol
 import asyncio
 
@@ -11,7 +11,8 @@ permisos_usuario = []
 rol_usuario: str | None = None
 sesion_iniciada = False
 
-BASE_URL = "http://192.168.0.173:8000"
+#Completar la URL para testing
+BASE_URL = "http://x.x.x.x:8000"
 
 
 def menu_general():
@@ -181,9 +182,7 @@ def buscar_por_genero() -> None:
     while True:
         i += 1
         generos.append(input(f'Ingrese un género ({i}): '))
-        opcion = cadena_mayusculas(
-            input('¿Desea seguir ingresando géneros? (S/N): '))
-        if opcion == 'N':
+        if not validar_opcion("¿Desea seguir ingresando generos? (S/N): "):
             break
     mostrar_peliculas_paginadas("moviesByGender", {"generos": generos})
 
@@ -250,6 +249,7 @@ def modificar_pelicula():
     titulo = input("Ingrese el título de la película a modificar: ").strip()
     año = validar_entero("Ingrese el año de estreno original: ",
                          "Error: Ingrese un año válido.")
+    limpiar_consola()
     auth = HTTPBasicAuth(usuario_actual, contraseña_actual)  # type: ignore
     r = requests.get(
         f"{BASE_URL}/obtenerPeliculaPorId",
@@ -284,21 +284,26 @@ def modificar_pelicula():
         if opcion == '1':
             pelicula_modificada["title"] = input(
                 "Ingrese el nuevo título: ").strip()
+            limpiar_consola()
         elif opcion == '2':
             pelicula_modificada["year"] = validar_entero(
                 "Ingrese el nuevo año: ", "Error: Año inválido.")
+            limpiar_consola()
         elif opcion == '3':
             elenco_str = input("Ingrese el nuevo elenco separado por coma: ")
             pelicula_modificada["cast"] = [a.strip()
                                            for a in elenco_str.split(',')]
+            limpiar_consola()
         elif opcion == '4':
             generos_str = input(
                 "Ingrese los nuevos géneros separados por coma: ")
             pelicula_modificada["genres"] = [g.strip()
                                              for g in generos_str.split(',')]
+            limpiar_consola()
         elif opcion == '5':
             pelicula_modificada["extract"] = input(
                 "Ingrese la nueva sinopsis: ")
+            limpiar_consola()
         elif opcion == '6':
             respuesta = requests.put(
                 f"{BASE_URL}/modificarPelicula/{id_pelicula}",
@@ -306,12 +311,18 @@ def modificar_pelicula():
                 auth=auth
             )
             procesar_respuesta(respuesta)
+            input("Presione Enter para continuar...")
+            limpiar_consola()
             break
         elif opcion == '0':
             print("Modificación cancelada.")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
             break
         else:
             print("Opción inválida. Intente nuevamente.")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
 
 
 def eliminar_pelicula():

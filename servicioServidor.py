@@ -5,12 +5,13 @@ from fastapi import status
 from fastapi.responses import JSONResponse
 from modelos import Pelicula
 from utils import verificar_permisos_servidor, cadena_mayusculas
-from modelos import Permiso, Rol
+from modelos import Permiso
 
 RESULTADOS_POR_PAGINA = 15
 
 
 def get_peliculas() -> dict:
+    '''Funcion para cargar el archivo movies.json y extraer todo el listado de películas'''
     try:
         with open('movies.json', 'r', encoding='utf-8') as json_file:
             datos = json.load(json_file)
@@ -22,6 +23,7 @@ def get_peliculas() -> dict:
 
 
 def get_todos_titulos(permisos: list[str], pagina: int = 1) -> JSONResponse:
+    '''Funcion base que permite obtener todas las películas almacenadas en movies.json'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -45,6 +47,7 @@ def get_todos_titulos(permisos: list[str], pagina: int = 1) -> JSONResponse:
 
 
 def get_peliculas_por_titulo(titulo: str, permisos: list[str], pagina: int = 1) -> JSONResponse:
+    '''Funcion que permite obtener películas según el título ingresado por el usuario'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -72,6 +75,7 @@ def get_peliculas_por_titulo(titulo: str, permisos: list[str], pagina: int = 1) 
 
 
 def get_filmografia(nombre: str, permisos: list[str], pagina: int = 1) -> JSONResponse:
+    '''Función que permite obtener la filmografía del actor ingresado por el usuario'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -99,6 +103,7 @@ def get_filmografia(nombre: str, permisos: list[str], pagina: int = 1) -> JSONRe
 
 
 def get_peliculas_por_genero(generos: list[str], permisos: list[str], pagina: int = 1) -> JSONResponse:
+    '''Funcion que permite obtener películas estrictamente por los generos ingresados '''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -140,6 +145,7 @@ def get_peliculas_por_genero(generos: list[str], permisos: list[str], pagina: in
 
 
 def get_sinopsis(filtro_titulo: str, permisos: list[str]) -> JSONResponse:
+    '''Función que permite obtener la sinopsis de una película, en caso que la tenga.'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
 
@@ -170,6 +176,7 @@ def get_sinopsis(filtro_titulo: str, permisos: list[str]) -> JSONResponse:
 
 
 def get_peliculas_por_año(year: int, permisos: list[str], pagina: int = 1) -> JSONResponse:
+    '''Funcion que permite obtener películas según su año de estreno'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -198,7 +205,6 @@ def get_peliculas_por_año(year: int, permisos: list[str], pagina: int = 1) -> J
 def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: list[str], pagina: int = 1) -> JSONResponse:
     """
     A partir de un género y un actor devuelve la filmografía que cumple con lo especificado.
-    Incluye paginado y conteo total de resultados.
     """
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
@@ -239,6 +245,7 @@ def get_filmografia_por_genero(filtro_actor: str, filtro_genero: str, permisos: 
 
 
 def get_pelicula_id(titulo: str, año: int, permisos: list[str]):
+    '''Función obtener una película con su ID asociado (posición en la lista)'''
     verificar_permisos_servidor(permisos, [Permiso.VER, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -311,6 +318,7 @@ def post_pelicula(pelicula: Pelicula, permisos: list[str]) -> JSONResponse:
 
 
 def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[str]) -> JSONResponse:
+    '''Función que permite eliminar películas segun la clave natural Título y Año de estreno de la película'''
     verificar_permisos_servidor(permisos, [Permiso.ELIMINAR, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:
@@ -344,6 +352,7 @@ def eliminar_pelicula_por_titulo_y_año(titulo: str, año: int, permisos: list[s
 
 
 def put_pelicula(pelicula_actualizada: Pelicula, id_pelicula: int, permisos: list[str]) -> JSONResponse:
+    '''Funcion para modificar películas, toma un'''
     verificar_permisos_servidor(permisos, [Permiso.EDITAR, Permiso.TODO])
     respuesta = get_peliculas()
     if respuesta.get("status") != 200:

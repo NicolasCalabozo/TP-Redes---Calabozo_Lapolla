@@ -1,5 +1,5 @@
 import requests
-from utils import validar_entero, salir
+from utils import validar_entero, salir, limpiar_consola
 from modelos import Pelicula
 
 import asyncio
@@ -38,24 +38,30 @@ def crear_pelicula():
         if opcion == '1':
             pelicula_nueva["title"] = input(
                 "Ingrese el nuevo título: ").strip()
+            limpiar_consola()
         elif opcion == '2':
             pelicula_nueva["year"] = validar_entero(
                 "Ingrese el nuevo año: ", "Error: Año inválido.")
+            limpiar_consola()
         elif opcion == '3':
             elenco_str = input("Ingrese el nuevo elenco separado por coma: ")
             pelicula_nueva["cast"] = [a.strip() for a in elenco_str.split(',')]
+            limpiar_consola()
         elif opcion == '4':
             generos_str = input(
                 "Ingrese los nuevos géneros separados por coma: ")
             pelicula_nueva["genres"] = [g.strip()
                                         for g in generos_str.split(',')]
+            limpiar_consola()
         elif opcion == '5':
             pelicula_nueva["extract"] = input("Ingrese la nueva sinopsis: ")
+            limpiar_consola()
         elif opcion == '6':
             if not pelicula_nueva["title"] or not pelicula_nueva["year"]:
                 print(
                     "\n¡Error! El título y el año son campos obligatorios para guardar.")
                 input("Presione Enter para continuar...")
+                limpiar_consola()
                 continue
 
             pelicula_a_crear = Pelicula(**pelicula_nueva)
@@ -63,10 +69,13 @@ def crear_pelicula():
             return pelicula_a_crear
         elif opcion == '0':
             print("Creación cancelada.")
+            input("Presione Enter para continuar...")
+            limpiar_consola()
             return None
         else:
             print("Opción inválida. Intente nuevamente.")
-
+            input("Presione Enter para continuar...")
+            limpiar_consola()
 
 def procesar_respuesta(respuesta: requests.Response) -> None:
     datos = respuesta.json()
@@ -79,6 +88,11 @@ def procesar_respuesta(respuesta: requests.Response) -> None:
 
 
 def seleccionar_generos(lista_generos: list[str]) -> list[str]:
+    '''Seleccionador de generos no utilizado en el cliente.
+    La idea a implementar era recuperar los generos del servidor, mostrarselos a los usuarios y mediante
+    ellos, permitirles seleccionar en vez de ingresar los géneros separados por coma para reducir 
+    las inconsistencias por input de usuario.
+    '''
     seleccionados = set()
     while True:
         print("\nSeleccione los géneros deseados (S para Salir):")
@@ -129,20 +143,23 @@ async def bombardear(url: str, rps: int, duracion: int, auth: tuple[str, str]):
 
     async with httpx.AsyncClient() as cliente:
         while time.perf_counter() < fin_prueba:
-            # Crear un batch de tareas igual al RPS
+            # Se crean la cantidad de tareas concurrentes definidas por el RPS
             tareas = [cliente.get(url, auth=auth, timeout=10) for _ in range(rps)]
+            #Se ejecutan las tareas y se guardan sus callbacks en la variable respuestas
             respuestas = await asyncio.gather(*tareas, return_exceptions=True)
-
+            #Se contabilizan las respuestas exitosas, con errores de cliente o too many requests
             for resp in respuestas:
                 enviadas += 1
                 if isinstance(resp, BaseException):
                     errores_cliente += 1
                 else:
                     if resp.status_code == 429:
+                        #Errores causados por nuestro limitador
                         errores_servidor += 1
                     elif resp.status_code >= 400:
                         errores_cliente += 1
                     else:
+                        #Codigos [200-299]
                         exitosas += 1
 
             # Esperar 1 segundo para la siguiente ráfaga
